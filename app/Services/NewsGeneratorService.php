@@ -716,7 +716,7 @@ class NewsGeneratorService
 
     protected function buildPrompt(string $categoryName, array $sourceData, array $recentTitles): string
     {
-        $currentDate = now()->format('l, d F Y, h:i A');
+        $currentDate = now('Asia/Dhaka')->format('l, d F Y, h:i A');
         $prompt = "Generate a short hot news article about Bangladesh. The news MUST belong to the category: \"{$categoryName}\".\n";
         $prompt .= "CRITICAL: Today's date and time is {$currentDate}. Ensure all references to time (like 'today', 'yesterday', 'this morning') are relative to this exact date and time. Do NOT invent dates from the past like 2024.\n";
         $prompt .= "CRITICAL: The news MUST BE ABOUT THE ABSOLUTE LATEST, MOST RECENT event (within the last 1-2 hours) happening in Bangladesh.\n";
