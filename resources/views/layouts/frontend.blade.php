@@ -562,13 +562,84 @@
                 font-size: 12px;
                 text-align: center;
             }
+
+            /* --- Mobile Header (JagoNews Style) --- */
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 15px;
+                background: #fff;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            .mobile-header .hamburger {
+                font-size: 24px;
+                color: var(--primary-red);
+                cursor: pointer;
+            }
+            .mobile-header .logo img {
+                max-height: 40px;
+            }
+            .mobile-header .logo-text {
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--primary-green);
+                display: flex;
+                align-items: center;
+                margin-bottom: 0;
+            }
+            .mobile-header .logo-text .red {
+                color: var(--primary-red);
+                margin-left: 5px;
+            }
+            .mobile-header .right-actions {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+            .mobile-header .eng-btn {
+                color: var(--primary-red);
+                font-weight: 600;
+                font-size: 15px;
+                text-decoration: none;
+            }
+            .mobile-header .search-icon {
+                font-size: 20px;
+                color: #222;
+                cursor: pointer;
+            }
+            .mobile-navbar-container {
+                border-bottom: 1px solid #eaeaea;
+                background: #fff;
+            }
+            .mobile-navbar {
+                display: flex;
+                overflow-x: auto;
+                white-space: nowrap;
+                padding: 12px 15px;
+                gap: 20px;
+                -ms-overflow-style: none; /* IE and Edge */
+                scrollbar-width: none; /* Firefox */
+            }
+            .mobile-navbar::-webkit-scrollbar {
+                display: none; /* Chrome, Safari and Opera */
+            }
+            .mobile-navbar a {
+                color: #222;
+                font-size: 16px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .mobile-navbar a:hover {
+                color: var(--primary-red);
+            }
         </style>
         @stack('css')
     </head>
     
     <body>
         <!-- 1. Top Utility Navigation Bar -->
-        <div class="top-utility-bar">
+        <div class="top-utility-bar d-none d-lg-block">
             <div class="container d-flex justify-content-between align-items-center">
                 <div class="date-time d-flex align-items-center">
                     <span><i class="far fa-calendar-alt me-1"></i> বুধবার, ১ জুলাই, ২০২৬ইং</span>
@@ -594,7 +665,7 @@
         </div>
 
         <!-- 2. Header Main with Logo & Advertisement Banner -->
-        <header class="header-main">
+        <header class="header-main d-none d-lg-block">
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-lg-4 col-md-5 mb-3 mb-md-0 text-center text-md-start">
@@ -625,7 +696,7 @@
         </header>
 
         <!-- 3. Navigation Bar Category Links -->
-        <div class="main-navbar-container">
+        <div class="main-navbar-container d-none d-lg-block">
             <nav class="navbar navbar-expand p-0">
                 <div class="container d-flex flex-nowrap">
                     <a href="{{ route('home') }}" class="nav-home-btn nav-link active py-3 flex-shrink-0">
@@ -649,6 +720,41 @@
                     </div>
                 </div>
             </nav>
+        </div>
+
+        <!-- 4. Mobile Header & Navbar (Visible only on small screens) -->
+        <div class="d-block d-lg-none">
+            <div class="mobile-header">
+                <div class="hamburger">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <div class="logo">
+                    <a href="{{ route('home') }}" class="text-decoration-none">
+                        @if($siteLogo)
+                            <img src="{{ $siteLogo }}" alt="{{ $siteTitle }}">
+                        @else
+                            <div class="logo-text">বিডিবি <span class="red">নিউজ</span></div>
+                        @endif
+                    </a>
+                </div>
+                <div class="right-actions">
+                    <a href="#" class="eng-btn">ENG</a>
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-navbar-container">
+                <div class="mobile-navbar">
+                    <a href="{{ route('home') }}">প্রচ্ছদ</a>
+                    <a href="#">সর্বশেষ</a>
+                    @foreach($categories as $cat)
+                        <a href="#">{{ $cat->name }}</a>
+                    @endforeach
+                    <a href="#">ভিডিও</a>
+                    <a href="#">পরিবার</a>
+                </div>
+            </div>
         </div>
 
         <div class="container">
