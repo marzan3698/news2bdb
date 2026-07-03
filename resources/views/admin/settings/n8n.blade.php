@@ -139,15 +139,15 @@
             },
             {
               "name": "title",
-              "value": "={{ $json.title }}"
+              "value": "=@{{ $json.title }}"
             },
             {
               "name": "url",
-              "value": "={{ $json.link }}"
+              "value": "=@{{ $json.link }}"
             },
             {
               "name": "content",
-              "value": "={{ $json.contentSnippet }}"
+              "value": "=@{{ $json.contentSnippet }}"
             }
           ]
         },
