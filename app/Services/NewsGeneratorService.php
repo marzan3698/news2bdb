@@ -905,6 +905,10 @@ class NewsGeneratorService
      */
     protected function scrapeOgImage(string $url): ?string
     {
+        if (str_contains(parse_url($url, PHP_URL_HOST) ?? '', 'google.com')) {
+            return null; // Do not scrape Google redirect pages for images
+        }
+
         try {
             $resp = Http::timeout(10)
                 ->withHeaders([
@@ -1098,10 +1102,15 @@ class NewsGeneratorService
     {
         try {
             // Using Pollinations.ai for reliable, free AI image generation without API key requirements
-            $encodedPrompt = urlencode('A high quality realistic news photo for: ' . $prompt);
+            $safePrompt = mb_substr($prompt, 0, 300, 'UTF-8');
+            $encodedPrompt = urlencode('A high quality realistic news photo for: ' . $safePrompt);
             $url = "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=800&height=450&nologo=1&seed=" . rand(1, 99999);
             
-            $resp = Http::timeout(30)->get($url);
+            $resp = Http::timeout(30)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+                ])
+                ->get($url);
 
             if ($resp->successful()) {
                 $body = $resp->body();
