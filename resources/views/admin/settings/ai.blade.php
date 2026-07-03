@@ -22,7 +22,7 @@
                     <!-- Nav Tabs -->
                     <ul class="nav nav-tabs mb-4" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active font-weight-bold text-dark" data-toggle="tab" href="#gemini-tab" role="tab"><i class="mdi mdi-robot mr-1"></i> Google Gemini Settings</a>
+                            <a class="nav-link active font-weight-bold text-dark" data-toggle="tab" href="#gemini-tab" role="tab"><i class="mdi mdi-robot mr-1"></i> AI Providers (API Keys)</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link font-weight-bold text-dark" data-toggle="tab" href="#image-mode-tab" role="tab"><i class="mdi mdi-image-multiple mr-1"></i> Image Mode</a>
@@ -40,12 +40,18 @@
 
                     <!-- Tab Panes -->
                     <div class="tab-content">
-                        <!-- Gemini Tab -->
+                        <!-- AI Providers Tab -->
                         <div class="tab-pane active" id="gemini-tab" role="tabpanel">
                             <div class="form-group mb-3">
                                 <label for="gemini_api_key" class="font-weight-bold">Gemini API Key</label>
                                 <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" value="{{ $gemini_api_key }}" placeholder="Enter your Google AI Studio API Key">
                                 <small class="form-text text-muted">Generate a key from Google AI Studio to let Gemini rewrite and translate news.</small>
+                            </div>
+
+                            <div class="form-group mb-3 mt-4">
+                                <label for="openai_api_key" class="font-weight-bold">OpenAI API Key (For DALL-E 3 Images)</label>
+                                <input type="password" class="form-control" id="openai_api_key" name="openai_api_key" value="{{ $openai_api_key ?? '' }}" placeholder="sk-proj-...">
+                                <small class="form-text text-muted">Optional: Provide an OpenAI API Key to generate ultra-realistic news images using DALL-E 3. If left blank, Pollinations AI will be used as a free fallback.</small>
                             </div>
                         </div>
 

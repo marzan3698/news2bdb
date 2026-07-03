@@ -1101,9 +1101,36 @@ class NewsGeneratorService
     protected function generateGeminiImage(string $prompt): ?array
     {
         try {
-            // Using Pollinations.ai for reliable, free AI image generation without API key requirements
-            $safePrompt = mb_substr($prompt, 0, 300, 'UTF-8');
-            $encodedPrompt = urlencode('A high quality realistic news photo for: ' . $safePrompt);
+            $safePrompt = mb_substr('A high quality realistic news photo for: ' . $prompt, 0, 900, 'UTF-8');
+            $openAiKey = \App\Models\Setting::where('key', 'openai_api_key')->value('value');
+
+            if (!empty($openAiKey)) {
+                // Try OpenAI DALL-E 3
+                $aiResponse = Http::timeout(60)
+                    ->withHeaders([
+                        'Authorization' => 'Bearer ' . $openAiKey,
+                        'Content-Type' => 'application/json',
+                    ])
+                    ->post('https://api.openai.com/v1/images/generations', [
+                        'model' => 'dall-e-3',
+                        'prompt' => $safePrompt,
+                        'n' => 1,
+                        'size' => '1024x1024'
+                    ]);
+
+                if ($aiResponse->successful()) {
+                    $imageUrl = $aiResponse->json('data.0.url');
+                    if ($imageUrl) {
+                        $imgData = Http::timeout(30)->get($imageUrl)->body();
+                        if (strlen($imgData) > 5000) {
+                            return ['data' => $imgData, 'ext' => 'jpg'];
+                        }
+                    }
+                }
+            }
+
+            // Fallback: Using Pollinations.ai for free AI image generation
+            $encodedPrompt = urlencode($safePrompt);
             $url = "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=800&height=450&nologo=1&seed=" . rand(1, 99999);
             
             $resp = Http::timeout(30)
