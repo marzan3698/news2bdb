@@ -62,6 +62,10 @@ class NewsGeneratorService
             $categoryName = $targetCategory ? $targetCategory->name : 'জাতীয়';
             $categoryId = $targetCategory?->id;
 
+            // 3. Get recent titles and URLs for duplicate prevention
+            $recentTitles = $this->getRecentTitles(25);
+            $recentUrls = $this->getRecentUrls(100); // New method to get recently used URLs
+
             // 2. Fetch source content (multi-source intelligence or custom data)
             if (!empty($customSourceData) && (!empty($customSourceData['headline']) || !empty($customSourceData['content']))) {
                 $sourceData = [
@@ -72,11 +76,12 @@ class NewsGeneratorService
                     'name'      => 'n8n Push',
                 ];
             } else {
-                $sourceData = $this->fetchFromSources($categoryId);
+                $sourceData = $this->fetchFromSources($categoryId, $recentUrls);
             }
 
-            // 3. Get recent titles for duplicate prevention
-            $recentTitles = $this->getRecentTitles(25);
+            if (empty($sourceData['headline']) && empty($sourceData['content']) && ($sourceData['tier'] ?? 0) !== 5) {
+                // If nothing found and not tier 5, just let tier 5 handle it
+            }
 
             // 4. Build the prompt
             $prompt = $this->buildPrompt($categoryName, $sourceData, $recentTitles);
@@ -87,7 +92,14 @@ class NewsGeneratorService
                 return $this->fail('Failed to generate from Gemini or invalid JSON returned.', $categoryId, $startTime);
             }
 
-            // 6. Check duplicate
+            // Clean up boolean source_matched from string "false"
+            if (isset($newsData['source_matched'])) {
+                if (is_string($newsData['source_matched']) && strtolower($newsData['source_matched']) === 'false') {
+                    $newsData['source_matched'] = false;
+                }
+            }
+
+            // 6. Check duplicate by hash
             $contentHash = $this->computeHash($newsData['title'], $sourceData['url'] ?? null);
             if ($this->isDuplicate($contentHash)) {
                 return $this->fail('Duplicate content detected — skipped.', $categoryId, $startTime, 'skipped');
@@ -182,7 +194,7 @@ class NewsGeneratorService
      * Tier 4: Google Trends Bangladesh (trending topics)
      * Tier 5: Pure Gemini Grounding (AI generates from Google Search)
      */
-    protected function fetchFromSources(?int $categoryId): array
+    protected function fetchFromSources(?int $categoryId, array $recentUrls = []): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
 
@@ -194,28 +206,28 @@ class NewsGeneratorService
         }
 
         // ── TIER 1: BBC Bengali RSS ──
-        $result = $this->fetchBbcBengali();
+        $result = $this->fetchBbcBengali($recentUrls);
         if (!empty($result['headline'])) {
             $result['tier'] = 1;
             return $result;
         }
 
         // ── TIER 2: Google News RSS (category-targeted) ──
-        $result = $this->fetchGoogleNewsRss($categoryName);
+        $result = $this->fetchGoogleNewsRss($categoryName, $recentUrls);
         if (!empty($result['headline'])) {
             $result['tier'] = 2;
             return $result;
         }
 
         // ── TIER 3: Database sources with UA rotation ──
-        $result = $this->fetchFromDbSources($categoryId);
+        $result = $this->fetchFromDbSources($categoryId, $recentUrls);
         if (!empty($result['headline'])) {
             $result['tier'] = 3;
             return $result;
         }
 
         // ── TIER 4: Google Trends Bangladesh ──
-        $result = $this->fetchGoogleTrends();
+        $result = $this->fetchGoogleTrends($recentUrls);
         if (!empty($result['headline'])) {
             $result['tier'] = 4;
             return $result;
@@ -231,7 +243,7 @@ class NewsGeneratorService
     // TIER 1: BBC BENGALI RSS
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected function fetchBbcBengali(): array
+    protected function fetchBbcBengali(array $recentUrls = []): array
     {
         $reliableFeeds = [
             ['url' => 'https://feeds.bbci.co.uk/bengali/rss.xml', 'name' => 'BBC Bengali'],
@@ -239,7 +251,7 @@ class NewsGeneratorService
         ];
 
         foreach ($reliableFeeds as $feed) {
-            $result = $this->parseRssUrl($feed['url'], $feed['name']);
+            $result = $this->parseRssUrl($feed['url'], $feed['name'], $recentUrls);
             if (!empty($result['headline'])) {
                 return $result;
             }
@@ -252,13 +264,13 @@ class NewsGeneratorService
     // TIER 2: GOOGLE NEWS RSS
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected function fetchGoogleNewsRss(string $categoryName): array
+    protected function fetchGoogleNewsRss(string $categoryName, array $recentUrls = []): array
     {
         $keyword = $this->categoryKeywords[$categoryName] ?? 'বাংলাদেশ সর্বশেষ খবর';
         $encodedKeyword = urlencode($keyword);
         $url = "https://news.google.com/rss/search?q={$encodedKeyword}&hl=bn&gl=BD&ceid=BD:bn";
 
-        $result = $this->parseRssUrl($url, 'Google News (' . $categoryName . ')');
+        $result = $this->parseRssUrl($url, 'Google News (' . $categoryName . ')', $recentUrls);
 
         if (!empty($result['url']) && str_contains($result['url'], 'news.google.com')) {
             $realUrl = $this->resolveGoogleNewsUrl($result['url']);
@@ -302,7 +314,7 @@ class NewsGeneratorService
     // TIER 3: DATABASE SOURCES WITH UA ROTATION
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected function fetchFromDbSources(?int $categoryId): array
+    protected function fetchFromDbSources(?int $categoryId, array $recentUrls = []): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
 
@@ -334,7 +346,7 @@ class NewsGeneratorService
         $bestDate = null;
 
         foreach ($sources as $source) {
-            $result = $this->fetchSingleSource($source);
+            $result = $this->fetchSingleSource($source, $recentUrls);
             if (!$result['headline']) continue;
 
             if (!$bestResult) {
@@ -356,7 +368,7 @@ class NewsGeneratorService
     // TIER 4: GOOGLE TRENDS
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected function fetchGoogleTrends(): array
+    protected function fetchGoogleTrends(array $recentUrls = []): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
 
@@ -408,6 +420,11 @@ class NewsGeneratorService
                 'url'       => $newsUrl ?? (string)($item->link ?? ''),
                 'date'      => null,
             ];
+            
+            if (in_array($result['url'], $recentUrls)) {
+                return $empty;
+            }
+            return $result;
         } catch (\Throwable $e) {
             return $empty;
         }
@@ -417,7 +434,7 @@ class NewsGeneratorService
     // SHARED RSS PARSER (used by Tier 1, 2, and 3)
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected function parseRssUrl(string $feedUrl, string $sourceName): array
+    protected function parseRssUrl(string $feedUrl, string $sourceName, array $recentUrls = []): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => $sourceName, 'url' => null];
 
@@ -449,15 +466,15 @@ class NewsGeneratorService
         $xml = @simplexml_load_string($body, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
 
         if ($xml && isset($xml->channel->item)) {
-            return $this->extractBestRssItem($xml->channel->item, $sourceName);
+            return $this->extractBestRssItem($xml->channel->item, $sourceName, $recentUrls);
         } elseif ($xml && $xml->getName() === 'feed') {
-            return $this->extractBestAtomEntry($xml, $sourceName);
+            return $this->extractBestAtomEntry($xml, $sourceName, $recentUrls);
         }
 
         return $empty;
     }
 
-    protected function extractBestRssItem($items, string $sourceName): array
+    protected function extractBestRssItem($items, string $sourceName, array $recentUrls = []): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => $sourceName, 'url' => null];
 
@@ -467,6 +484,11 @@ class NewsGeneratorService
         $bestDate = null;
 
         foreach ($items as $item) {
+            $itemLink = (string)($item->link ?? '');
+            if (in_array($itemLink, $recentUrls)) {
+                continue; // Skip already used items
+            }
+
             $pubDateStr = (string)($item->pubDate ?? '');
             if (empty($pubDateStr)) {
                 $dcNs = $item->children('http://purl.org/dc/elements/1.1/');
@@ -517,7 +539,7 @@ class NewsGeneratorService
         return $empty;
     }
 
-    protected function extractBestAtomEntry($feed, string $sourceName): array
+    protected function extractBestAtomEntry($feed, string $sourceName, array $recentUrls = []): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => $sourceName, 'url' => null];
 
@@ -536,7 +558,7 @@ class NewsGeneratorService
                 }
             }
 
-            if (!empty($title)) {
+            if (!empty($title) && !in_array($link, $recentUrls)) {
                 return [
                     'headline'  => mb_convert_encoding($title, 'UTF-8', 'UTF-8'),
                     'content'   => mb_substr(mb_convert_encoding(trim($content), 'UTF-8', 'UTF-8'), 0, 3000, 'UTF-8'),
@@ -551,7 +573,7 @@ class NewsGeneratorService
         return $empty;
     }
 
-    protected function fetchSingleSource(AiSource $source): array
+    protected function fetchSingleSource(AiSource $source, array $recentUrls = []): array
     {
         $result = [
             'headline' => null,
@@ -564,11 +586,11 @@ class NewsGeneratorService
 
         try {
             if ($source->type === 'rss') {
-                return $this->parseRssUrl($source->url, $source->name);
+                return $this->parseRssUrl($source->url, $source->name, $recentUrls);
             } elseif ($source->type === 'facebook') {
-                return $this->fetchFacebook($source, $result);
+                return $this->fetchFacebook($source, $result, $recentUrls);
             } elseif ($source->type === 'scraping') {
-                return $this->fetchScraping($source, $result);
+                return $this->fetchScraping($source, $result, $recentUrls);
             }
         } catch (\Exception $e) {}
 
@@ -622,7 +644,7 @@ class NewsGeneratorService
         return null;
     }
 
-    protected function fetchFacebook(AiSource $source, array $result): array
+    protected function fetchFacebook(AiSource $source, array $result, array $recentUrls = []): array
     {
         $fbEnabled = Setting::where('key', 'facebook_enabled')->value('value') ?? '0';
         $pageToken = Setting::where('key', 'facebook_page_access_token')->value('value');
@@ -643,6 +665,10 @@ class NewsGeneratorService
 
         foreach ($feedData['data'] as $post) {
             if (!empty($post['message'])) {
+                $postUrl = "https://facebook.com/{$fbPageId}/posts/" . ($post['id'] ?? '');
+                if (in_array($postUrl, $recentUrls)) continue;
+                $result['url'] = $postUrl;
+
                 $result['content'] = mb_convert_encoding($post['message'], 'UTF-8', 'UTF-8');
                 $lines = explode("\n", $result['content']);
                 $result['headline'] = trim($lines[0]);
@@ -661,8 +687,10 @@ class NewsGeneratorService
         return $result;
     }
 
-    protected function fetchScraping(AiSource $source, array $result): array
+    protected function fetchScraping(AiSource $source, array $result, array $recentUrls = []): array
     {
+        if (in_array($source->url, $recentUrls)) return $result;
+
         $response = Http::timeout(10)->get($source->url);
         if (!$response->successful()) return $result;
 
@@ -780,6 +808,15 @@ class NewsGeneratorService
         return Article::orderBy('id', 'desc')
             ->take($count)
             ->pluck('title')
+            ->toArray();
+    }
+
+    protected function getRecentUrls(int $count = 100): array
+    {
+        return Article::whereNotNull('source_url')
+            ->orderBy('id', 'desc')
+            ->take($count)
+            ->pluck('source_url')
             ->toArray();
     }
 
