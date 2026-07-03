@@ -725,7 +725,7 @@
         <!-- 4. Mobile Header & Navbar (Visible only on small screens) -->
         <div class="d-block d-lg-none">
             <div class="mobile-header">
-                <div class="hamburger">
+                <div class="hamburger" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebarOffcanvas" aria-controls="mobileSidebarOffcanvas">
                     <i class="fas fa-bars"></i>
                 </div>
                 <div class="logo">
@@ -739,7 +739,7 @@
                 </div>
                 <div class="right-actions">
                     <a href="#" class="eng-btn">ENG</a>
-                    <div class="search-icon">
+                    <div class="search-icon" data-bs-toggle="offcanvas" data-bs-target="#mobileSearchOffcanvas" aria-controls="mobileSearchOffcanvas">
                         <i class="fas fa-search"></i>
                     </div>
                 </div>
@@ -817,6 +817,56 @@
                 </div>
             </div>
         </footer>
+
+        <!-- Mobile Sidebar Offcanvas -->
+        <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileSidebarOffcanvas" aria-labelledby="mobileSidebarLabel">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="offcanvas-title" id="mobileSidebarLabel">
+                    @if($siteLogo)
+                        <img src="{{ $siteLogo }}" alt="{{ $siteTitle }}" style="max-height: 35px;">
+                    @else
+                        <div style="font-size: 24px; font-weight: 700; color: var(--primary-green);">বিডিবি <span style="color: var(--primary-red);">নিউজ</span></div>
+                    @endif
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0">
+                <ul class="list-group list-group-flush">
+                    <a href="{{ route('home') }}" class="list-group-item list-group-item-action py-3"><i class="fas fa-home me-2 text-secondary"></i> প্রচ্ছদ</a>
+                    @foreach($categories as $cat)
+                        <a href="#" class="list-group-item list-group-item-action py-3"><i class="fas fa-chevron-right me-2 text-secondary" style="font-size:12px;"></i> {{ $cat->name }}</a>
+                    @endforeach
+                    <a href="#" class="list-group-item list-group-item-action py-3"><i class="fas fa-video me-2 text-secondary"></i> ভিডিও</a>
+                    <a href="#" class="list-group-item list-group-item-action py-3"><i class="fas fa-users me-2 text-secondary"></i> পরিবার</a>
+                </ul>
+                <div class="p-3 mt-2">
+                    @if (Route::has('login'))
+                        @auth
+                            <a href="{{ url('/dashboard') }}" class="btn btn-outline-success w-100 mb-2"><i class="fas fa-desktop me-1"></i> ড্যাশবোর্ড</a>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-outline-dark w-100 mb-2"><i class="fas fa-sign-in-alt me-1"></i> লগইন</a>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}" class="btn btn-outline-danger w-100"><i class="fas fa-user-plus me-1"></i> নিবন্ধন</a>
+                            @endif
+                        @endauth
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Search Offcanvas -->
+        <div class="offcanvas offcanvas-top" tabindex="-1" id="mobileSearchOffcanvas" aria-labelledby="mobileSearchLabel" style="height: auto;">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="offcanvas-title" id="mobileSearchLabel">অনুসন্ধান করুন</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <form action="#" method="GET" class="d-flex">
+                    <input class="form-control me-2" type="search" placeholder="খবর খুঁজুন..." aria-label="Search" name="q">
+                    <button class="btn btn-danger" type="submit"><i class="fas fa-search"></i></button>
+                </form>
+            </div>
+        </div>
 
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
