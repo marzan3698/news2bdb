@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Article;
 use App\Models\User;
+use App\Models\AiSource;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -38,6 +39,31 @@ class NewsPortalSeeder extends Seeder
         // Get Admin User ID (should be 1)
         $adminUser = User::where('role', 'admin')->first();
         $adminId = $adminUser ? $adminUser->id : 1;
+
+        // --- SEED LATEST RSS AI SOURCES ---
+        $aiSources = [
+            ['name' => 'Prothom Alo (Latest)', 'url' => 'https://www.prothomalo.com/feed', 'type' => 'rss', 'category_id' => $categoryModels['national']->id],
+            ['name' => 'BDNews24 (Latest)', 'url' => 'https://bangla.bdnews24.com/feed', 'type' => 'rss', 'category_id' => $categoryModels['national']->id],
+            ['name' => 'Jugantor (Latest)', 'url' => 'https://www.jugantor.com/feed/rss.xml', 'type' => 'rss', 'category_id' => $categoryModels['national']->id],
+            ['name' => 'Jago News (Politics)', 'url' => 'https://www.jagonews24.com/rss/rss.xml', 'type' => 'rss', 'category_id' => $categoryModels['politics']->id],
+            ['name' => 'Prothom Alo (Sports)', 'url' => 'https://www.prothomalo.com/sports/feed', 'type' => 'rss', 'category_id' => $categoryModels['sports']->id],
+            ['name' => 'Prothom Alo (World)', 'url' => 'https://www.prothomalo.com/international/feed', 'type' => 'rss', 'category_id' => $categoryModels['international']->id],
+            ['name' => 'Daily Star (Biz)', 'url' => 'https://www.thedailystar.net/business/rss.xml', 'type' => 'rss', 'category_id' => $categoryModels['economy']->id],
+            ['name' => 'Prothom Alo (Entertainment)', 'url' => 'https://www.prothomalo.com/entertainment/feed', 'type' => 'rss', 'category_id' => $categoryModels['entertainment']->id],
+            ['name' => 'Prothom Alo (Tech)', 'url' => 'https://www.prothomalo.com/technology/feed', 'type' => 'rss', 'category_id' => $categoryModels['technology']->id],
+        ];
+
+        foreach ($aiSources as $source) {
+            AiSource::firstOrCreate(
+                ['url' => $source['url']],
+                [
+                    'name' => $source['name'],
+                    'type' => $source['type'],
+                    'category_id' => $source['category_id'],
+                    'status' => true
+                ]
+            );
+        }
 
         // --- MOCK ARTICLES ---
 

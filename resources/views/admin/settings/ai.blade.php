@@ -31,6 +31,9 @@
                             <a class="nav-link font-weight-bold text-dark" data-toggle="tab" href="#facebook-tab" role="tab"><i class="mdi mdi-facebook mr-1"></i> Facebook Integration</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link font-weight-bold text-dark" data-toggle="tab" href="#n8n-tab" role="tab"><i class="mdi mdi-webhook mr-1"></i> n8n Integration</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link font-weight-bold text-dark" data-toggle="tab" href="#scheduler-tab" role="tab"><i class="mdi mdi-clock-outline mr-1"></i> Scheduler & Advanced</a>
                         </li>
                     </ul>
@@ -70,6 +73,22 @@
                                 <label for="facebook_page_access_token" class="font-weight-bold">Facebook Page Access Token</label>
                                 <input type="password" class="form-control" id="facebook_page_access_token" name="facebook_page_access_token" value="{{ $facebook_page_access_token }}" placeholder="Enter Facebook Page Access Token">
                                 <small class="form-text text-muted">A permanent Page Access Token with <code>pages_read_user_content</code> or page feed reading permissions.</small>
+                            </div>
+                        </div>
+
+                        <!-- n8n Tab -->
+                        <div class="tab-pane" id="n8n-tab" role="tabpanel">
+                            <div class="form-group mb-3">
+                                <label for="n8n_api_key" class="font-weight-bold">n8n API Key (Secret)</label>
+                                <input type="password" class="form-control" id="n8n_api_key" name="n8n_api_key" value="{{ $n8n_api_key ?? '' }}" placeholder="Enter a secret key for n8n Webhook">
+                                <small class="form-text text-muted">Set a strong secret key here. You will pass this key from your n8n workflow as a Header: <code>X-API-KEY</code> or as a query parameter <code>?api_key=</code>.</small>
+                            </div>
+
+                            <div class="alert border-0 mt-3" style="background:#e3f2fd;border-left:4px solid #2196f3 !important;">
+                                <strong><i class="mdi mdi-webhook mr-1"></i> n8n Webhook URL:</strong>
+                                <p class="mb-1 mt-2">Use this URL in your n8n HTTP Request node (Method: POST):</p>
+                                <code class="d-block p-2 rounded" style="background:#263238;color:#80cbc4;font-size:13px;">{{ url('/api/n8n/generate') }}</code>
+                                <small class="text-muted mt-1 d-block">You can optionally pass a category slug in the body: <code>{"category": "national"}</code>.</small>
                             </div>
                         </div>
 

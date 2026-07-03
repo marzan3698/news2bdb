@@ -235,10 +235,11 @@ class NewsGeneratorService
         $xml = @simplexml_load_string($response->body(), 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
         if (!$xml || !isset($xml->channel->item)) return $result;
 
-        $cutoff = Carbon::now()->subHours(24);
+        // Search window: up to 6 hours for maximum freshness
+        $cutoff = Carbon::now()->subHours(6);
         $selectedItem = null;
         $foundImage = null;
-        $itemDate = null;
+        $bestDate = null;
 
         foreach ($xml->channel->item as $item) {
             // ── FRESHNESS CHECK ──
@@ -254,26 +255,29 @@ class NewsGeneratorService
             if (!empty($pubDateStr)) {
                 try {
                     $parsedDate = Carbon::parse($pubDateStr);
-                    if ($parsedDate->lessThan($cutoff)) continue; // Older than 24h — skip
+                    if ($parsedDate->lessThan($cutoff)) continue; // Older than 6h — skip
                 } catch (\Throwable $e) {
-                    // Unparseable date — allow through
+                    // Unparseable date — allow through, but treat as low priority
                 }
             }
 
             // ── IMAGE EXTRACTION (6 methods) ──
             $imgCandidate = $this->extractImageFromRssItem($item);
+            $hasImage = $imgCandidate && filter_var($imgCandidate, FILTER_VALIDATE_URL);
 
-            if ($imgCandidate && filter_var($imgCandidate, FILTER_VALIDATE_URL)) {
-                $foundImage = $imgCandidate;
-                $selectedItem = $item;
-                $itemDate = $parsedDate;
-                break;
-            }
-
-            // Fresh item but no image — keep as fallback
+            // ── SELECTION LOGIC ──
+            // We want the absolute newest item.
             if (!$selectedItem) {
                 $selectedItem = $item;
-                $itemDate = $parsedDate;
+                $bestDate = $parsedDate;
+                $foundImage = $hasImage ? $imgCandidate : null;
+            } else {
+                // If we found a newer item, replace the selected one
+                if ($parsedDate && $bestDate && $parsedDate->greaterThan($bestDate)) {
+                    $selectedItem = $item;
+                    $bestDate = $parsedDate;
+                    $foundImage = $hasImage ? $imgCandidate : null;
+                }
             }
         }
 
@@ -289,7 +293,7 @@ class NewsGeneratorService
             if ($foundImage) {
                 $result['image_url'] = $foundImage;
             }
-            $result['date'] = $itemDate;
+            $result['date'] = $bestDate;
         }
 
         return $result;
@@ -424,6 +428,7 @@ class NewsGeneratorService
     protected function buildPrompt(string $categoryName, array $sourceData, array $recentTitles): string
     {
         $prompt = "Generate a short hot news article about Bangladesh. The news MUST belong to the category: \"{$categoryName}\".\n";
+        $prompt .= "CRITICAL: The news MUST BE ABOUT THE ABSOLUTE LATEST, MOST RECENT event (within the last 1-2 hours) happening in Bangladesh.\n";
 
         if (!empty($sourceData['headline']) && !empty($sourceData['content'])) {
             $sourceName = $sourceData['name'] ?? 'Unknown';

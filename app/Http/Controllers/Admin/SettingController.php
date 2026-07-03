@@ -21,6 +21,7 @@ class SettingController extends Controller
         $scheduler_interval = Setting::where('key', 'scheduler_interval')->value('value') ?? '30';
         $gemini_model = Setting::where('key', 'gemini_model')->value('value') ?? 'gemini-2.5-flash';
         $use_grounding = Setting::where('key', 'use_grounding')->value('value') ?? '1';
+        $n8n_api_key = Setting::where('key', 'n8n_api_key')->value('value');
 
         return view('admin.settings.ai', compact(
             'gemini_api_key',
@@ -32,7 +33,8 @@ class SettingController extends Controller
             'scheduler_enabled',
             'scheduler_interval',
             'gemini_model',
-            'use_grounding'
+            'use_grounding',
+            'n8n_api_key'
         ));
     }
 
@@ -49,6 +51,7 @@ class SettingController extends Controller
             'scheduler_interval' => 'nullable|in:5,10,15,30,60,120',
             'gemini_model' => 'nullable|in:gemini-2.5-flash,gemini-3.5-flash',
             'use_grounding' => 'nullable|string',
+            'n8n_api_key' => 'nullable|string',
         ]);
 
         Setting::updateOrCreate(['key' => 'gemini_api_key'], ['value' => $request->gemini_api_key]);
@@ -61,6 +64,7 @@ class SettingController extends Controller
         Setting::updateOrCreate(['key' => 'scheduler_interval'], ['value' => $request->scheduler_interval ?? '30']);
         Setting::updateOrCreate(['key' => 'gemini_model'], ['value' => $request->gemini_model ?? 'gemini-2.5-flash']);
         Setting::updateOrCreate(['key' => 'use_grounding'], ['value' => $request->has('use_grounding') ? '1' : '0']);
+        Setting::updateOrCreate(['key' => 'n8n_api_key'], ['value' => $request->n8n_api_key]);
 
         return redirect()->back()->with('success', 'AI and Integration Settings updated successfully.');
     }
