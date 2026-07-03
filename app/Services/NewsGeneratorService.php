@@ -100,7 +100,11 @@ class NewsGeneratorService
             $article = $this->saveArticle($newsData, $categoryId, $userId, $imageUrl, $contentHash, $sourceData);
 
             // 9. Log success
-            $this->log('success', $sourceData['name'] ?? null, $categoryId, $article->id, null, $startTime);
+            $logSourceName = $sourceData['name'] ?? null;
+            if ($logSourceName && isset($sourceData['tier'])) {
+                $logSourceName .= ' (Tier ' . $sourceData['tier'] . ')';
+            }
+            $this->log('success', $logSourceName, $categoryId, $article->id, null, $startTime);
 
             return [
                 'success' => true,
@@ -141,35 +145,183 @@ class NewsGeneratorService
     }
 
     // =========================================================================
-    // MULTI-SOURCE INTELLIGENCE
+    // 5-TIER INTELLIGENCE ENGINE
     // =========================================================================
 
     /**
-     * Fetches source content from up to 3 sources, preferring category-matched ones.
-     * Returns the freshest item found.
+     * Category-to-keyword mapping for Google News RSS queries.
+     */
+    protected array $categoryKeywords = [
+        'জাতীয়'      => 'বাংলাদেশ সর্বশেষ খবর',
+        'সারাবাংলা'   => 'বাংলাদেশ জেলা খবর',
+        'রাজনীতি'     => 'বাংলাদেশ রাজনীতি',
+        'আন্তর্জাতিক' => 'আন্তর্জাতিক খবর বাংলা',
+        'অর্থনীতি'    => 'বাংলাদেশ অর্থনীতি ব্যবসা',
+        'খেলাধুলা'    => 'বাংলাদেশ ক্রিকেট খেলাধুলা',
+        'বিনোদন'      => 'বাংলাদেশ বিনোদন চলচ্চিত্র',
+        'প্রযুক্তি'   => 'বাংলাদেশ প্রযুক্তি তথ্যপ্রযুক্তি',
+    ];
+
+    /**
+     * User-Agent rotation pool for bypassing Cloudflare and bot detection.
+     */
+    protected array $userAgents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+        'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+    ];
+
+    /**
+     * 5-TIER FAILSAFE SOURCE FETCHING
+     *
+     * Tier 1: BBC Bengali RSS (always open, never blocks bots)
+     * Tier 2: Google News RSS (category-targeted, always available)
+     * Tier 3: Database sources with User-Agent rotation
+     * Tier 4: Google Trends Bangladesh (trending topics)
+     * Tier 5: Pure Gemini Grounding (AI generates from Google Search)
      */
     protected function fetchFromSources(?int $categoryId): array
     {
         $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
 
-        // Priority: category-matched sources first, then any active source
+        // Resolve category name for keyword-based searches
+        $categoryName = 'জাতীয়';
+        if ($categoryId) {
+            $cat = Category::find($categoryId);
+            if ($cat) $categoryName = $cat->name;
+        }
+
+        // ── TIER 1: BBC Bengali RSS ──
+        $result = $this->fetchBbcBengali();
+        if (!empty($result['headline'])) {
+            $result['tier'] = 1;
+            return $result;
+        }
+
+        // ── TIER 2: Google News RSS (category-targeted) ──
+        $result = $this->fetchGoogleNewsRss($categoryName);
+        if (!empty($result['headline'])) {
+            $result['tier'] = 2;
+            return $result;
+        }
+
+        // ── TIER 3: Database sources with UA rotation ──
+        $result = $this->fetchFromDbSources($categoryId);
+        if (!empty($result['headline'])) {
+            $result['tier'] = 3;
+            return $result;
+        }
+
+        // ── TIER 4: Google Trends Bangladesh ──
+        $result = $this->fetchGoogleTrends();
+        if (!empty($result['headline'])) {
+            $result['tier'] = 4;
+            return $result;
+        }
+
+        // ── TIER 5: Return empty — Gemini Grounding will handle it ──
+        $empty['tier'] = 5;
+        $empty['name'] = 'Gemini Grounding (no source available)';
+        return $empty;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 1: BBC BENGALI RSS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    protected function fetchBbcBengali(): array
+    {
+        $reliableFeeds = [
+            ['url' => 'https://feeds.bbci.co.uk/bengali/rss.xml', 'name' => 'BBC Bengali'],
+            ['url' => 'https://feeds.feedburner.com/dwbengali', 'name' => 'DW Bengali'],
+        ];
+
+        foreach ($reliableFeeds as $feed) {
+            $result = $this->parseRssUrl($feed['url'], $feed['name']);
+            if (!empty($result['headline'])) {
+                return $result;
+            }
+        }
+
+        return ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 2: GOOGLE NEWS RSS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    protected function fetchGoogleNewsRss(string $categoryName): array
+    {
+        $keyword = $this->categoryKeywords[$categoryName] ?? 'বাংলাদেশ সর্বশেষ খবর';
+        $encodedKeyword = urlencode($keyword);
+        $url = "https://news.google.com/rss/search?q={$encodedKeyword}&hl=bn&gl=BD&ceid=BD:bn";
+
+        $result = $this->parseRssUrl($url, 'Google News (' . $categoryName . ')');
+
+        if (!empty($result['url']) && str_contains($result['url'], 'news.google.com')) {
+            $realUrl = $this->resolveGoogleNewsUrl($result['url']);
+            if ($realUrl) {
+                $result['url'] = $realUrl;
+            }
+        }
+
+        return $result;
+    }
+
+    protected function resolveGoogleNewsUrl(string $googleUrl): ?string
+    {
+        if (preg_match('/url=([^&]+)/', $googleUrl, $m)) {
+            return urldecode($m[1]);
+        }
+
+        try {
+            $resp = Http::timeout(8)
+                ->withHeaders(['User-Agent' => $this->userAgents[0]])
+                ->withOptions(['allow_redirects' => ['max' => 3, 'track_redirects' => true]])
+                ->get($googleUrl);
+
+            if ($resp->successful()) {
+                $redirects = $resp->header('X-Guzzle-Redirect-History');
+                if ($redirects) {
+                    $urls = explode(', ', $redirects);
+                    return end($urls);
+                }
+                $body = $resp->body();
+                if (preg_match('/url=(https?:\/\/[^\s"\']+)/i', $body, $m)) {
+                    return $m[1];
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 3: DATABASE SOURCES WITH UA ROTATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    protected function fetchFromDbSources(?int $categoryId): array
+    {
+        $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
+
         $sources = collect();
 
         if ($categoryId) {
             $matched = AiSource::where('status', true)
                 ->where('category_id', $categoryId)
                 ->inRandomOrder()
-                ->take(2)
+                ->take(3)
                 ->get();
             $sources = $sources->merge($matched);
         }
 
-        // Fill up to 3 with generic sources
-        if ($sources->count() < 3) {
+        if ($sources->count() < 5) {
             $generic = AiSource::where('status', true)
                 ->whereNotIn('id', $sources->pluck('id')->toArray())
                 ->inRandomOrder()
-                ->take(3 - $sources->count())
+                ->take(5 - $sources->count())
                 ->get();
             $sources = $sources->merge($generic);
         }
@@ -185,14 +337,12 @@ class NewsGeneratorService
             $result = $this->fetchSingleSource($source);
             if (!$result['headline']) continue;
 
-            // If we haven't found anything yet, use this
             if (!$bestResult) {
                 $bestResult = $result;
                 $bestDate = $result['date'] ?? null;
                 continue;
             }
 
-            // Compare freshness: prefer newer items
             if (isset($result['date']) && $bestDate && $result['date']->greaterThan($bestDate)) {
                 $bestResult = $result;
                 $bestDate = $result['date'];
@@ -202,9 +352,205 @@ class NewsGeneratorService
         return $bestResult ?? $empty;
     }
 
-    /**
-     * Fetches content from a single AiSource (RSS, Facebook, or Scraping).
-     */
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 4: GOOGLE TRENDS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    protected function fetchGoogleTrends(): array
+    {
+        $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => null, 'url' => null];
+
+        try {
+            $url = 'https://trends.google.com/trending/rss?geo=BD';
+            $resp = Http::timeout(10)
+                ->withHeaders(['User-Agent' => $this->userAgents[0]])
+                ->get($url);
+
+            if (!$resp->successful()) return $empty;
+
+            $xml = @simplexml_load_string($resp->body(), 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
+            if (!$xml || !isset($xml->channel->item)) return $empty;
+
+            $items = [];
+            $count = 0;
+            foreach ($xml->channel->item as $item) {
+                $items[] = $item;
+                $count++;
+                if ($count >= 5) break;
+            }
+
+            if (empty($items)) return $empty;
+            $item = $items[array_rand($items)];
+
+            $title = (string)$item->title;
+            $description = strip_tags((string)($item->description ?? ''));
+
+            $newsUrl = null;
+            $newsImage = null;
+            $htNs = $item->children('ht', true);
+            if ($htNs && isset($htNs->news_item)) {
+                foreach ($htNs->news_item as $newsItem) {
+                    if (isset($newsItem->news_item_url)) {
+                        $newsUrl = (string)$newsItem->news_item_url;
+                    }
+                    if (isset($newsItem->news_item_picture)) {
+                        $newsImage = (string)$newsItem->news_item_picture;
+                    }
+                    break;
+                }
+            }
+
+            return [
+                'headline'  => $title,
+                'content'   => !empty($description) ? $description : 'Trending topic in Bangladesh: ' . $title,
+                'image_url' => $newsImage,
+                'name'      => 'Google Trends BD',
+                'url'       => $newsUrl ?? (string)($item->link ?? ''),
+                'date'      => null,
+            ];
+        } catch (\Throwable $e) {
+            return $empty;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHARED RSS PARSER (used by Tier 1, 2, and 3)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    protected function parseRssUrl(string $feedUrl, string $sourceName): array
+    {
+        $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => $sourceName, 'url' => null];
+
+        $body = null;
+        foreach ($this->userAgents as $ua) {
+            try {
+                $resp = Http::timeout(12)
+                    ->withHeaders([
+                        'User-Agent' => $ua,
+                        'Accept' => 'application/rss+xml, application/xml, text/xml, */*',
+                        'Accept-Language' => 'bn-BD,bn;q=0.9,en;q=0.5',
+                    ])
+                    ->get($feedUrl);
+
+                if ($resp->successful()) {
+                    $responseBody = $resp->body();
+                    if (str_contains($responseBody, '<rss') || str_contains($responseBody, '<feed') || str_contains($responseBody, '<?xml')) {
+                        $body = $responseBody;
+                        break;
+                    }
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        if (!$body) return $empty;
+
+        $xml = @simplexml_load_string($body, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
+
+        if ($xml && isset($xml->channel->item)) {
+            return $this->extractBestRssItem($xml->channel->item, $sourceName);
+        } elseif ($xml && $xml->getName() === 'feed') {
+            return $this->extractBestAtomEntry($xml, $sourceName);
+        }
+
+        return $empty;
+    }
+
+    protected function extractBestRssItem($items, string $sourceName): array
+    {
+        $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => $sourceName, 'url' => null];
+
+        $cutoff = Carbon::now()->subHours(12);
+        $selectedItem = null;
+        $foundImage = null;
+        $bestDate = null;
+
+        foreach ($items as $item) {
+            $pubDateStr = (string)($item->pubDate ?? '');
+            if (empty($pubDateStr)) {
+                $dcNs = $item->children('http://purl.org/dc/elements/1.1/');
+                if ($dcNs && isset($dcNs->date)) {
+                    $pubDateStr = (string)$dcNs->date;
+                }
+            }
+
+            $parsedDate = null;
+            if (!empty($pubDateStr)) {
+                try {
+                    $parsedDate = Carbon::parse($pubDateStr);
+                    if ($parsedDate->lessThan($cutoff)) continue;
+                } catch (\Throwable $e) {}
+            }
+
+            $imgCandidate = $this->extractImageFromRssItem($item);
+            $hasImage = $imgCandidate && filter_var($imgCandidate, FILTER_VALIDATE_URL);
+
+            if (!$selectedItem) {
+                $selectedItem = $item;
+                $bestDate = $parsedDate;
+                $foundImage = $hasImage ? $imgCandidate : null;
+            } else {
+                if ($parsedDate && $bestDate && $parsedDate->greaterThan($bestDate)) {
+                    $selectedItem = $item;
+                    $bestDate = $parsedDate;
+                    $foundImage = $hasImage ? $imgCandidate : null;
+                }
+            }
+        }
+
+        if ($selectedItem) {
+            $contentNs = $selectedItem->children('http://purl.org/rss/1.0/modules/content/');
+            $encodedContent = ($contentNs && isset($contentNs->encoded)) ? (string)$contentNs->encoded : '';
+            $fullContent = strip_tags((string)$selectedItem->description . ' ' . $encodedContent);
+
+            return [
+                'headline'  => mb_convert_encoding((string)$selectedItem->title, 'UTF-8', 'UTF-8'),
+                'content'   => mb_substr(mb_convert_encoding(trim($fullContent), 'UTF-8', 'UTF-8'), 0, 3000, 'UTF-8'),
+                'image_url' => $foundImage,
+                'name'      => $sourceName,
+                'url'       => (string)($selectedItem->link ?? ''),
+                'date'      => $bestDate,
+            ];
+        }
+
+        return $empty;
+    }
+
+    protected function extractBestAtomEntry($feed, string $sourceName): array
+    {
+        $empty = ['headline' => null, 'content' => null, 'image_url' => null, 'name' => $sourceName, 'url' => null];
+
+        $entries = $feed->entry ?? [];
+
+        foreach ($entries as $entry) {
+            $title = (string)($entry->title ?? '');
+            $content = strip_tags((string)($entry->content ?? $entry->summary ?? ''));
+            $link = '';
+
+            foreach ($entry->link as $l) {
+                $attrs = $l->attributes();
+                if ((string)$attrs->rel === 'alternate' || empty((string)$attrs->rel)) {
+                    $link = (string)$attrs->href;
+                    break;
+                }
+            }
+
+            if (!empty($title)) {
+                return [
+                    'headline'  => mb_convert_encoding($title, 'UTF-8', 'UTF-8'),
+                    'content'   => mb_substr(mb_convert_encoding(trim($content), 'UTF-8', 'UTF-8'), 0, 3000, 'UTF-8'),
+                    'image_url' => null,
+                    'name'      => $sourceName,
+                    'url'       => $link,
+                    'date'      => isset($entry->updated) ? Carbon::parse((string)$entry->updated) : null,
+                ];
+            }
+        }
+
+        return $empty;
+    }
+
     protected function fetchSingleSource(AiSource $source): array
     {
         $result = [
@@ -218,110 +564,25 @@ class NewsGeneratorService
 
         try {
             if ($source->type === 'rss') {
-                return $this->fetchRss($source, $result);
+                return $this->parseRssUrl($source->url, $source->name);
             } elseif ($source->type === 'facebook') {
                 return $this->fetchFacebook($source, $result);
             } elseif ($source->type === 'scraping') {
                 return $this->fetchScraping($source, $result);
             }
-        } catch (\Exception $e) {
-            // Silently fail per-source; the system will try others
-        }
+        } catch (\Exception $e) {}
 
         return $result;
     }
 
-    /**
-     * Fetches and parses an RSS feed, finding the freshest item (within 24h) with an image.
-     */
-    protected function fetchRss(AiSource $source, array $result): array
-    {
-        $response = Http::timeout(15)
-            ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; NewsBot/1.0)'])
-            ->get($source->url);
-
-        if (!$response->successful()) return $result;
-
-        $xml = @simplexml_load_string($response->body(), 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
-        if (!$xml || !isset($xml->channel->item)) return $result;
-
-        // Search window: up to 6 hours for maximum freshness
-        $cutoff = Carbon::now()->subHours(6);
-        $selectedItem = null;
-        $foundImage = null;
-        $bestDate = null;
-
-        foreach ($xml->channel->item as $item) {
-            // ── FRESHNESS CHECK ──
-            $pubDateStr = (string)($item->pubDate ?? '');
-            if (empty($pubDateStr)) {
-                $dcNs = $item->children('http://purl.org/dc/elements/1.1/');
-                if ($dcNs && isset($dcNs->date)) {
-                    $pubDateStr = (string)$dcNs->date;
-                }
-            }
-
-            $parsedDate = null;
-            if (!empty($pubDateStr)) {
-                try {
-                    $parsedDate = Carbon::parse($pubDateStr);
-                    if ($parsedDate->lessThan($cutoff)) continue; // Older than 6h — skip
-                } catch (\Throwable $e) {
-                    // Unparseable date — allow through, but treat as low priority
-                }
-            }
-
-            // ── IMAGE EXTRACTION (6 methods) ──
-            $imgCandidate = $this->extractImageFromRssItem($item);
-            $hasImage = $imgCandidate && filter_var($imgCandidate, FILTER_VALIDATE_URL);
-
-            // ── SELECTION LOGIC ──
-            // We want the absolute newest item.
-            if (!$selectedItem) {
-                $selectedItem = $item;
-                $bestDate = $parsedDate;
-                $foundImage = $hasImage ? $imgCandidate : null;
-            } else {
-                // If we found a newer item, replace the selected one
-                if ($parsedDate && $bestDate && $parsedDate->greaterThan($bestDate)) {
-                    $selectedItem = $item;
-                    $bestDate = $parsedDate;
-                    $foundImage = $hasImage ? $imgCandidate : null;
-                }
-            }
-        }
-
-        if ($selectedItem) {
-            $result['headline'] = mb_convert_encoding((string)$selectedItem->title, 'UTF-8', 'UTF-8');
-            $result['url'] = (string)($selectedItem->link ?? '');
-
-            $contentNs = $selectedItem->children('http://purl.org/rss/1.0/modules/content/');
-            $encodedContent = ($contentNs && isset($contentNs->encoded)) ? (string)$contentNs->encoded : '';
-            $fullContent = strip_tags((string)$selectedItem->description . ' ' . $encodedContent);
-            $result['content'] = mb_substr(mb_convert_encoding(trim($fullContent), 'UTF-8', 'UTF-8'), 0, 3000, 'UTF-8');
-
-            if ($foundImage) {
-                $result['image_url'] = $foundImage;
-            }
-            $result['date'] = $bestDate;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Extracts an image URL from an RSS item using 6 different methods.
-     */
     protected function extractImageFromRssItem(\SimpleXMLElement $item): ?string
     {
-        // Method 1: media:content (most common)
         $mediaChildren = $item->children('http://search.yahoo.com/mrss/');
         if ($mediaChildren && isset($mediaChildren->content)) {
             $url = (string)$mediaChildren->content->attributes()->url;
             if (!empty($url)) return $url;
         }
 
-        // Method 2: media namespace shorthand
         $mediaShort = $item->children('media', true);
         if ($mediaShort && isset($mediaShort->content)) {
             $url = (string)$mediaShort->content->attributes()->url;
@@ -332,7 +593,6 @@ class NewsGeneratorService
             if (!empty($url)) return $url;
         }
 
-        // Method 3: enclosure tag
         if (isset($item->enclosure)) {
             $encAttrs = $item->enclosure->attributes();
             $encType = (string)($encAttrs->type ?? '');
@@ -342,13 +602,11 @@ class NewsGeneratorService
             }
         }
 
-        // Method 4: <description> HTML img tags
         $desc = (string)$item->description;
         if (preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $desc, $match)) {
             return $match[1];
         }
 
-        // Method 5: content:encoded HTML
         $contentNs = $item->children('http://purl.org/rss/1.0/modules/content/');
         if ($contentNs && isset($contentNs->encoded)) {
             if (preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', (string)$contentNs->encoded, $match)) {
@@ -356,18 +614,14 @@ class NewsGeneratorService
             }
         }
 
-        // Method 6: Regex fallback on raw XML
         $itemXml = $item->asXML();
-        if (preg_match('/url=["\']([^"\']+\.(jpg|jpeg|png|webp))["\']/i', $itemXml, $match)) {
+        if (preg_match('/url=["\']([^"\']+\.(jpg|jpeg|png|webp))["\'](?!\s*type=["\']text)/i', $itemXml, $match)) {
             return $match[1];
         }
 
         return null;
     }
 
-    /**
-     * Fetches content from a Facebook page feed.
-     */
     protected function fetchFacebook(AiSource $source, array $result): array
     {
         $fbEnabled = Setting::where('key', 'facebook_enabled')->value('value') ?? '0';
@@ -407,9 +661,6 @@ class NewsGeneratorService
         return $result;
     }
 
-    /**
-     * Fetches content by scraping a web page.
-     */
     protected function fetchScraping(AiSource $source, array $result): array
     {
         $response = Http::timeout(10)->get($source->url);
