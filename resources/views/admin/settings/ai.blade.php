@@ -48,10 +48,22 @@
                                 <small class="form-text text-muted">Generate a key from Google AI Studio to let Gemini rewrite and translate news.</small>
                             </div>
 
-                            <div class="form-group mb-3 mt-4">
-                                <label for="openai_api_key" class="font-weight-bold">OpenAI API Key (For DALL-E 3 Images)</label>
+                            <hr>
+
+                            <h5 class="mt-4 mb-3"><i class="mdi mdi-image-auto mr-1"></i> Image Generation Provider</h5>
+                            <div class="form-group mb-3">
+                                <label for="ai_image_provider" class="font-weight-bold">Select AI Image Provider</label>
+                                <select class="form-control" id="ai_image_provider" name="ai_image_provider">
+                                    <option value="pollinations" {{ ($ai_image_provider ?? 'pollinations') == 'pollinations' ? 'selected' : '' }}>Free AI Generator (Pollinations.ai)</option>
+                                    <option value="openai" {{ ($ai_image_provider ?? '') == 'openai' ? 'selected' : '' }}>OpenAI (DALL-E 3)</option>
+                                </select>
+                                <small class="form-text text-muted">Choose which AI service will generate images for news articles.</small>
+                            </div>
+
+                            <div class="form-group mb-3" id="openai_key_container" style="{{ ($ai_image_provider ?? '') == 'openai' ? '' : 'display:none;' }}">
+                                <label for="openai_api_key" class="font-weight-bold">OpenAI API Key</label>
                                 <input type="password" class="form-control" id="openai_api_key" name="openai_api_key" value="{{ $openai_api_key ?? '' }}" placeholder="sk-proj-...">
-                                <small class="form-text text-muted">Optional: Provide an OpenAI API Key to generate ultra-realistic news images using DALL-E 3. If left blank, Pollinations AI will be used as a free fallback.</small>
+                                <small class="form-text text-muted">Required if you selected OpenAI (DALL-E 3) above.</small>
                             </div>
                         </div>
 
@@ -368,6 +380,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // Toggle OpenAI key field based on selection
+    $('#ai_image_provider').on('change', function() {
+        if ($(this).val() === 'openai') {
+            $('#openai_key_container').slideDown();
+        } else {
+            $('#openai_key_container').slideUp();
+        }
+    });
 });
 </script>
 @endpush

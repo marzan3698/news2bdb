@@ -23,6 +23,7 @@ class SettingController extends Controller
         $use_grounding = Setting::where('key', 'use_grounding')->value('value') ?? '1';
         $n8n_api_key = Setting::where('key', 'n8n_api_key')->value('value');
         $openai_api_key = Setting::where('key', 'openai_api_key')->value('value');
+        $ai_image_provider = Setting::where('key', 'ai_image_provider')->value('value') ?? 'pollinations';
 
         return view('admin.settings.ai', compact(
             'gemini_api_key',
@@ -36,7 +37,8 @@ class SettingController extends Controller
             'gemini_model',
             'use_grounding',
             'n8n_api_key',
-            'openai_api_key'
+            'openai_api_key',
+            'ai_image_provider'
         ));
     }
 
@@ -55,6 +57,7 @@ class SettingController extends Controller
             'use_grounding' => 'nullable|string',
             'n8n_api_key' => 'nullable|string',
             'openai_api_key' => 'nullable|string',
+            'ai_image_provider' => 'nullable|in:pollinations,openai',
         ]);
 
         Setting::updateOrCreate(['key' => 'gemini_api_key'], ['value' => $request->gemini_api_key]);
@@ -69,6 +72,7 @@ class SettingController extends Controller
         Setting::updateOrCreate(['key' => 'use_grounding'], ['value' => $request->has('use_grounding') ? '1' : '0']);
         Setting::updateOrCreate(['key' => 'n8n_api_key'], ['value' => $request->n8n_api_key]);
         Setting::updateOrCreate(['key' => 'openai_api_key'], ['value' => $request->openai_api_key]);
+        Setting::updateOrCreate(['key' => 'ai_image_provider'], ['value' => $request->ai_image_provider ?? 'pollinations']);
 
         return redirect()->back()->with('success', 'AI and Integration Settings updated successfully.');
     }

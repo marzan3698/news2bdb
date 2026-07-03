@@ -1103,8 +1103,9 @@ class NewsGeneratorService
         try {
             $safePrompt = mb_substr('A high quality realistic news photo for: ' . $prompt, 0, 900, 'UTF-8');
             $openAiKey = \App\Models\Setting::where('key', 'openai_api_key')->value('value');
+            $provider = \App\Models\Setting::where('key', 'ai_image_provider')->value('value') ?? 'pollinations';
 
-            if (!empty($openAiKey)) {
+            if ($provider === 'openai' && !empty($openAiKey)) {
                 // Try OpenAI DALL-E 3
                 $aiResponse = Http::timeout(60)
                     ->withHeaders([
