@@ -48,7 +48,7 @@ class NewsGeneratorService
      * @param int|null $userId The user ID to associate with the article
      * @return array ['success' => bool, 'message' => string, 'article' => ?Article]
      */
-    public function generate(array $categoryIds = [], ?int $userId = null): array
+    public function generate(array $categoryIds = [], ?int $userId = null, array $customSourceData = []): array
     {
         $startTime = microtime(true);
 
@@ -62,8 +62,18 @@ class NewsGeneratorService
             $categoryName = $targetCategory ? $targetCategory->name : 'জাতীয়';
             $categoryId = $targetCategory?->id;
 
-            // 2. Fetch source content (multi-source intelligence)
-            $sourceData = $this->fetchFromSources($categoryId);
+            // 2. Fetch source content (multi-source intelligence or custom data)
+            if (!empty($customSourceData) && (!empty($customSourceData['headline']) || !empty($customSourceData['content']))) {
+                $sourceData = [
+                    'headline'  => $customSourceData['headline'] ?? '',
+                    'content'   => $customSourceData['content'] ?? '',
+                    'url'       => $customSourceData['url'] ?? '',
+                    'image_url' => $customSourceData['image_url'] ?? '',
+                    'name'      => 'n8n Push',
+                ];
+            } else {
+                $sourceData = $this->fetchFromSources($categoryId);
+            }
 
             // 3. Get recent titles for duplicate prevention
             $recentTitles = $this->getRecentTitles(25);
@@ -427,7 +437,9 @@ class NewsGeneratorService
 
     protected function buildPrompt(string $categoryName, array $sourceData, array $recentTitles): string
     {
+        $currentDate = now()->format('l, d F Y, h:i A');
         $prompt = "Generate a short hot news article about Bangladesh. The news MUST belong to the category: \"{$categoryName}\".\n";
+        $prompt .= "CRITICAL: Today's date and time is {$currentDate}. Ensure all references to time (like 'today', 'yesterday', 'this morning') are relative to this exact date and time. Do NOT invent dates from the past like 2024.\n";
         $prompt .= "CRITICAL: The news MUST BE ABOUT THE ABSOLUTE LATEST, MOST RECENT event (within the last 1-2 hours) happening in Bangladesh.\n";
 
         if (!empty($sourceData['headline']) && !empty($sourceData['content'])) {

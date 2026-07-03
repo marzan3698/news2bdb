@@ -41,8 +41,19 @@ class N8nController extends Controller
             }
         }
 
+        // Optional: Custom Source Data from n8n
+        $customSourceData = [];
+        if ($request->has('title') || $request->has('content')) {
+            $customSourceData = [
+                'headline'  => $request->input('title', ''),
+                'content'   => $request->input('content', ''),
+                'url'       => $request->input('url', ''),
+                'image_url' => $request->input('image_url', ''),
+            ];
+        }
+
         // Generate Article (user_id = 1 for admin)
-        $result = $service->generate($categoryIds, 1);
+        $result = $service->generate($categoryIds, 1, $customSourceData);
 
         return response()->json($result, $result['success'] ? 200 : 400);
     }

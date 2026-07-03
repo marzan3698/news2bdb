@@ -136,6 +136,18 @@
             {
               "name": "category",
               "value": "sarabangla"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.link }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $json.contentSnippet }}"
             }
           ]
         },
