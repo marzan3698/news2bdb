@@ -18,20 +18,24 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         // Create Admin User
-        User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'admin',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'role' => 'admin',
+            ]
+        );
 
         // Create Regular User
-        User::create([
-            'name' => 'Regular User',
-            'email' => 'user@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'user',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'name' => 'Regular User',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'role' => 'user',
+            ]
+        );
 
         $this->call(NewsPortalSeeder::class);
     }
