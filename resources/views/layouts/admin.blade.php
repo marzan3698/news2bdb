@@ -17,6 +17,8 @@
         <link href="{{ asset('admin-assets/css/style.css') }}" rel="stylesheet" type="text/css" />
 
         @stack('css')
+        <!-- Toastify CSS -->
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
         <style>
             .page-wrapper-img {
                 position: relative;
@@ -248,5 +250,84 @@
 
         <!-- App js -->
         <script src="{{ asset('admin-assets/js/app.js') }}"></script>
+        
+        <!-- Toastify JS -->
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+        <!-- Real-time AI Generation Polling Script -->
+        <script>
+            $(document).ready(function() {
+                // Initial load time
+                let lastCheckedAt = new Date().toISOString();
+                
+                // Base64 short sounds to avoid external dependencies
+                const successSound = new Audio('data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'); // Fallback tiny silent mp3, we will use a better beep below
+                const beepSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+                const errorSound = new Audio('https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg'); // Using a distinct sound for error
+
+                function fetchLatestLogs() {
+                    $.ajax({
+                        url: "{{ route('admin.api.latest-logs') }}",
+                        method: "GET",
+                        data: { last_checked_at: lastCheckedAt },
+                        success: function(response) {
+                            if(response.logs && response.logs.length > 0) {
+                                // Update last checked time to the latest log's created_at
+                                lastCheckedAt = response.logs[response.logs.length - 1].created_at;
+                                
+                                let hasError = false;
+                                let hasSuccess = false;
+
+                                response.logs.forEach(log => {
+                                    if(log.status === 'success') {
+                                        hasSuccess = true;
+                                        Toastify({
+                                            text: "✅ New Article Generated: " + (log.article ? log.article.title : "Unknown Title"),
+                                            duration: 5000,
+                                            close: true,
+                                            gravity: "top", 
+                                            position: "right",
+                                            style: { background: "linear-gradient(to right, #00b09b, #96c93d)" },
+                                            onClick: function(){} 
+                                        }).showToast();
+                                        
+                                        // Update notification bell (basic increment)
+                                        let badge = $('.noti-icon-badge');
+                                        badge.text(parseInt(badge.text() || 0) + 1);
+                                    } 
+                                    else if (log.status === 'failed') {
+                                        hasError = true;
+                                        let errorText = log.error_message || "Unknown error occurred.";
+                                        
+                                        Toastify({
+                                            text: `❌ AI Generation Failed! Click to copy error.\nSource: ${log.source_name}`,
+                                            duration: 10000,
+                                            close: true,
+                                            gravity: "top", 
+                                            position: "right",
+                                            style: { background: "linear-gradient(to right, #ff5f6d, #ffc371)", color: "#000" },
+                                            onClick: function(){
+                                                navigator.clipboard.writeText(errorText);
+                                                alert("Error copied to clipboard!");
+                                            }
+                                        }).showToast();
+                                    }
+                                });
+
+                                // Play sounds
+                                if (hasError) {
+                                    errorSound.play().catch(e => console.log("Audio play blocked by browser"));
+                                } else if (hasSuccess) {
+                                    beepSound.play().catch(e => console.log("Audio play blocked by browser"));
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Poll every 15 seconds
+                setInterval(fetchLatestLogs, 15000);
+            });
+        </script>
     </body>
 </html>

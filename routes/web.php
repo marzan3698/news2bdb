@@ -22,6 +22,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'index'])->name('dashboard');
+    Route::get('/api/latest-logs', [App\Http\Controllers\AdminController::class, 'getLatestLogs'])->name('api.latest-logs');
     
     // AI Integration Settings
     Route::get('/settings/ai', [SettingController::class, 'aiSettings'])->name('settings.ai');

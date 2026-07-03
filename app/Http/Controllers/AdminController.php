@@ -18,4 +18,20 @@ class AdminController extends Controller
 
         return view('admin.dashboard', compact('stats', 'users'));
     }
+
+    public function getLatestLogs(Request $request)
+    {
+        $lastCheckedAt = $request->query('last_checked_at');
+        
+        if (!$lastCheckedAt) {
+            return response()->json(['logs' => []]);
+        }
+
+        $logs = \App\Models\GenerationLog::with('article')
+                    ->where('created_at', '>', $lastCheckedAt)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+                    
+        return response()->json(['logs' => $logs]);
+    }
 }
