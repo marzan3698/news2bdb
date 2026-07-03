@@ -32,6 +32,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings/general', [SettingController::class, 'generalSettings'])->name('settings.general');
     Route::post('/settings/general', [SettingController::class, 'saveGeneralSettings'])->name('settings.general.save');
     
+    // n8n Setup
+    Route::get('/settings/n8n-setup', [SettingController::class, 'n8nSetup'])->name('settings.n8n');
+    
     // AI Sources CRUD
     Route::resource('/settings/ai-sources', App\Http\Controllers\Admin\AiSourceController::class)->names('ai-sources');
     

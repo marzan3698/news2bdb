@@ -164,4 +164,10 @@ class SettingController extends Controller
 
         return redirect()->back()->with('success', 'General Settings updated successfully.');
     }
+
+    public function n8nSetup()
+    {
+        $n8n_api_key = Setting::where('key', 'n8n_api_key')->value('value');
+        return view('admin.settings.n8n', compact('n8n_api_key'));
+    }
 }
