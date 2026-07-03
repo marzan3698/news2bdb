@@ -543,21 +543,35 @@ class NewsGeneratorService
         // ── Try real source image (unless animation-only mode) ──
         if ($this->imageMode !== 'animation') {
             $sourceImageUrl = $sourceData['image_url'] ?? null;
+            $articlePageUrl = $sourceData['url'] ?? null;
+
+            // Attempt 1: Direct RSS image URL
             if ($sourceMatched && !empty($sourceImageUrl) && filter_var($sourceImageUrl, FILTER_VALIDATE_URL)) {
-                if ($this->probeImageUrl($sourceImageUrl)) {
-                    $realImgResult = $this->downloadImage($sourceImageUrl);
-                }
-                if (!$realImgResult) {
-                    $realImgResult = $this->downloadImage($sourceImageUrl);
+                $realImgResult = $this->downloadImage($sourceImageUrl, $articlePageUrl);
+            }
+
+            // Attempt 2: Scrape OG image from the article page
+            if (!$realImgResult && !empty($articlePageUrl) && filter_var($articlePageUrl, FILTER_VALIDATE_URL)) {
+                $ogImage = $this->scrapeOgImage($articlePageUrl);
+                if ($ogImage) {
+                    $realImgResult = $this->downloadImage($ogImage, $articlePageUrl);
                 }
             }
         }
 
         // ── Apply mode decision ──
         if ($this->imageMode === 'real') {
+            // Real mode: use source image, fallback to AI if nothing found
             if ($realImgResult) {
                 $processed = $this->applyGdProcessing($realImgResult['data'], $realImgResult['ext']);
                 $imageUrl = $this->saveImageToStorage($processed, $realImgResult['ext']);
+            } else {
+                // Fallback: generate AI image so articles never go without images
+                $aiResult = $this->generateGeminiImage($newsData['image_prompt'] ?? 'news event in bangladesh');
+                if ($aiResult) {
+                    $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext']);
+                    $imageUrl = $this->saveImageToStorage($processed, $aiResult['ext']);
+                }
             }
         } elseif ($this->imageMode === 'auto') {
             if ($realImgResult) {
@@ -581,33 +595,100 @@ class NewsGeneratorService
         return $imageUrl;
     }
 
-    protected function downloadImage(string $url): ?array
+    /**
+     * Scrapes the og:image meta tag from a given article URL.
+     */
+    protected function scrapeOgImage(string $url): ?string
     {
         try {
-            $resp = Http::timeout(20)
+            $resp = Http::timeout(10)
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-                    'Accept' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-                    'Referer' => 'https://www.prothomalo.com/',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 ])
                 ->get($url);
 
             if (!$resp->successful()) return null;
 
-            $body = $resp->body();
-            if (strlen($body) < 5120) return null; // reject tiny/placeholder images
+            $html = $resp->body();
 
-            $ct = $resp->header('Content-Type') ?? '';
-            $ext = 'jpg';
-            if (str_contains($ct, 'image/png')) $ext = 'png';
-            elseif (str_contains($ct, 'image/webp')) $ext = 'webp';
-            elseif (str_contains($url, '.png')) $ext = 'png';
-            elseif (str_contains($url, '.webp')) $ext = 'webp';
-
-            return ['data' => $body, 'ext' => $ext];
+            // Try og:image first
+            if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $m)) {
+                return $m[1];
+            }
+            // Try reverse attribute order
+            if (preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']/i', $html, $m)) {
+                return $m[1];
+            }
+            // Try twitter:image
+            if (preg_match('/<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $m)) {
+                return $m[1];
+            }
+            if (preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image["\']/i', $html, $m)) {
+                return $m[1];
+            }
         } catch (\Throwable $e) {
-            return null;
+            // Silent fail
         }
+
+        return null;
+    }
+
+    protected function downloadImage(string $url, ?string $refererUrl = null): ?array
+    {
+        // Determine referer from the image URL domain
+        $referer = $refererUrl;
+        if (empty($referer)) {
+            $parsedUrl = parse_url($url);
+            $referer = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? 'www.google.com') . '/';
+        }
+
+        // Try multiple user agents / referers for maximum compatibility
+        $attempts = [
+            [
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+                'Accept' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                'Referer' => $referer,
+            ],
+            [
+                'User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                'Accept' => 'image/*,*/*;q=0.8',
+            ],
+            [
+                'User-Agent' => 'facebookexternalhit/1.1',
+                'Accept' => '*/*',
+            ],
+        ];
+
+        foreach ($attempts as $headers) {
+            try {
+                $resp = Http::timeout(20)
+                    ->withHeaders($headers)
+                    ->get($url);
+
+                if (!$resp->successful()) continue;
+
+                $body = $resp->body();
+                if (strlen($body) < 3000) continue; // reject tiny/placeholder images
+
+                $ct = $resp->header('Content-Type') ?? '';
+                if (!str_contains($ct, 'image') && !preg_match('/\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i', $url)) {
+                    continue; // not an image
+                }
+
+                $ext = 'jpg';
+                if (str_contains($ct, 'image/png')) $ext = 'png';
+                elseif (str_contains($ct, 'image/webp')) $ext = 'webp';
+                elseif (str_contains($url, '.png')) $ext = 'png';
+                elseif (str_contains($url, '.webp')) $ext = 'webp';
+
+                return ['data' => $body, 'ext' => $ext];
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return null;
     }
 
     protected function probeImageUrl(string $url): bool
