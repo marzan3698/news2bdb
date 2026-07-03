@@ -809,37 +809,20 @@ class NewsGeneratorService
     protected function generateGeminiImage(string $prompt): ?array
     {
         try {
-            $url = 'https://generativelanguage.googleapis.com/v1beta/models/nano-banana-pro-preview:generateContent?key=' . $this->apiKey;
-            $payload = [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => 'Generate a highly detailed and realistic news photo or professional illustration for this topic: ' . $prompt]
-                        ]
-                    ]
-                ]
-            ];
-
-            $resp = Http::timeout(45)->post($url, $payload);
+            // Using Pollinations.ai for reliable, free AI image generation without API key requirements
+            $encodedPrompt = urlencode('A high quality realistic news photo for: ' . $prompt);
+            $url = "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=800&height=450&nologo=1&seed=" . rand(1, 99999);
+            
+            $resp = Http::timeout(30)->get($url);
 
             if ($resp->successful()) {
-                $data = $resp->json();
-                if (isset($data['candidates'][0]['content']['parts'][0]['inlineData'])) {
-                    $inlineData = $data['candidates'][0]['content']['parts'][0]['inlineData'];
-                    $base64 = $inlineData['data'];
-                    $mime = $inlineData['mimeType'] ?? 'image/jpeg';
-                    $ext = 'jpg';
-                    if (str_contains($mime, 'png')) $ext = 'png';
-                    elseif (str_contains($mime, 'webp')) $ext = 'webp';
-
-                    $decoded = base64_decode($base64);
-                    if ($decoded !== false && strlen($decoded) > 1000) {
-                        return ['data' => $decoded, 'ext' => $ext];
-                    }
+                $body = $resp->body();
+                if (strlen($body) > 5000) {
+                    return ['data' => $body, 'ext' => 'jpg'];
                 }
             }
         } catch (\Throwable $e) {
-            // Silent fail — image is optional
+            // Silent fail
         }
         return null;
     }

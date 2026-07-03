@@ -110,44 +110,6 @@
     },
     {
       "parameters": {
-        "url": "https://www.jugantor.com/feed/rss.xml"
-      },
-      "name": "RSS Feed",
-      "type": "n8n-nodes-base.rssFeedRead",
-      "typeVersion": 1,
-      "position": [ 450, 300 ]
-    },
-    {
-      "parameters": {
-        "url": "=@{{ $json.link }}",
-        "options": {}
-      },
-      "name": "Fetch Article HTML",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 3,
-      "position": [ 650, 300 ]
-    },
-    {
-      "parameters": {
-        "extractionValues": {
-          "values": [
-            {
-              "key": "image_url",
-              "cssSelector": "meta[property=\"og:image\"]",
-              "returnValue": "attribute",
-              "attribute": "content"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "Extract Image URL",
-      "type": "n8n-nodes-base.htmlExtract",
-      "typeVersion": 1,
-      "position": [ 850, 300 ]
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "{{ url('/api/n8n/generate') }}",
         "sendHeaders": true,
@@ -165,31 +127,15 @@
             {
               "name": "category",
               "value": "sarabangla"
-            },
-            {
-              "name": "title",
-              "value": "=@{{ $('RSS Feed').item.json.title }}"
-            },
-            {
-              "name": "url",
-              "value": "=@{{ $('RSS Feed').item.json.link }}"
-            },
-            {
-              "name": "content",
-              "value": "=@{{ $('RSS Feed').item.json.contentSnippet }}"
-            },
-            {
-              "name": "image_url",
-              "value": "=@{{ $json.image_url }}"
             }
           ]
         },
         "options": {}
       },
-      "name": "Send to BDB News",
+      "name": "Trigger AI Generation on BDB News",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [ 1050, 300 ]
+      "position": [ 450, 300 ]
     }
   ],
   "connections": {
@@ -197,40 +143,7 @@
       "main": [
         [
           {
-            "node": "RSS Feed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "RSS Feed": {
-      "main": [
-        [
-          {
-            "node": "Fetch Article HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Article HTML": {
-      "main": [
-        [
-          {
-            "node": "Extract Image URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Image URL": {
-      "main": [
-        [
-          {
-            "node": "Send to BDB News",
+            "node": "Trigger AI Generation on BDB News",
             "type": "main",
             "index": 0
           }
