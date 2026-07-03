@@ -8,7 +8,7 @@
         <div class="card">
             <div class="card-body">
                 <h4 class="mt-0 header-title">Google AI Studio (Gemini) Integration</h4>
-                <p class="text-muted mb-4">Set up your Gemini API key to enable AI-powered features like text generation (e.g., Gemini 1.5 Flash / Pro). Note: standard Gemini API keys currently support text output, while image generation requires Vertex AI Imagen access.</p>
+                <p class="text-muted mb-4">Set up your Gemini API key to enable AI-powered features like text generation (e.g., Gemini 2.5 Flash / 3.5 Flash). Image generation uses the Nano Banana model.</p>
 
                 @if(session('success'))
                     <div class="alert alert-success border-0">
@@ -29,6 +29,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link font-weight-bold text-dark" data-toggle="tab" href="#facebook-tab" role="tab"><i class="mdi mdi-facebook mr-1"></i> Facebook Integration</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold text-dark" data-toggle="tab" href="#scheduler-tab" role="tab"><i class="mdi mdi-clock-outline mr-1"></i> Scheduler & Advanced</a>
                         </li>
                     </ul>
 
@@ -135,6 +138,60 @@
                                 @else
                                     <span style="color:#e67e22;" class="font-weight-bold">🎨 Animation</span> — All images are AI-generated cartoon illustrations.
                                 @endif
+                            </div>
+                        </div>
+
+                        <!-- Scheduler & Advanced Tab -->
+                        <div class="tab-pane" id="scheduler-tab" role="tabpanel">
+                            <h5 class="font-weight-bold mb-3"><i class="mdi mdi-clock-fast mr-1"></i> Server-Side Scheduler</h5>
+                            <p class="text-muted mb-3">Enable automatic news generation without keeping the browser open. Requires a server cron job.</p>
+
+                            <div class="form-group mb-3">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="scheduler_enabled" name="scheduler_enabled" value="1" {{ ($scheduler_enabled ?? '0') == '1' ? 'checked' : '' }}>
+                                    <label class="custom-control-label font-weight-bold" for="scheduler_enabled">Enable Server Scheduler</label>
+                                </div>
+                                <small class="form-text text-muted">When enabled, the system will auto-generate news at the interval below (requires cron job on server).</small>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="scheduler_interval" class="font-weight-bold">Generation Interval</label>
+                                <select class="form-control" id="scheduler_interval" name="scheduler_interval" style="max-width: 300px;">
+                                    <option value="5" {{ ($scheduler_interval ?? '30') == '5' ? 'selected' : '' }}>Every 5 minutes</option>
+                                    <option value="10" {{ ($scheduler_interval ?? '30') == '10' ? 'selected' : '' }}>Every 10 minutes</option>
+                                    <option value="15" {{ ($scheduler_interval ?? '30') == '15' ? 'selected' : '' }}>Every 15 minutes</option>
+                                    <option value="30" {{ ($scheduler_interval ?? '30') == '30' ? 'selected' : '' }}>Every 30 minutes</option>
+                                    <option value="60" {{ ($scheduler_interval ?? '30') == '60' ? 'selected' : '' }}>Every 1 hour</option>
+                                    <option value="120" {{ ($scheduler_interval ?? '30') == '120' ? 'selected' : '' }}>Every 2 hours</option>
+                                </select>
+                            </div>
+
+                            <div class="alert border-0 mt-3" style="background:#fff3e0;border-left:4px solid #ff9800 !important;">
+                                <strong><i class="mdi mdi-console mr-1"></i> Cron Job Setup:</strong>
+                                <p class="mb-1 mt-2">Add this line to your server's crontab (cPanel → Cron Jobs):</p>
+                                <code class="d-block p-2 rounded" style="background:#263238;color:#80cbc4;font-size:13px;">* * * * * cd /path/to/bdbnews && php artisan schedule:run >> /dev/null 2>&1</code>
+                                <small class="text-muted mt-1 d-block">This runs Laravel's scheduler every minute. The actual generation interval is controlled by the setting above.</small>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <h5 class="font-weight-bold mb-3"><i class="mdi mdi-tune mr-1"></i> Advanced Settings</h5>
+
+                            <div class="form-group mb-3">
+                                <label for="gemini_model" class="font-weight-bold">Gemini Model for Text Generation</label>
+                                <select class="form-control" id="gemini_model" name="gemini_model" style="max-width: 350px;">
+                                    <option value="gemini-2.5-flash" {{ ($gemini_model ?? 'gemini-2.5-flash') == 'gemini-2.5-flash' ? 'selected' : '' }}>Gemini 2.5 Flash (Proven, Cost-effective)</option>
+                                    <option value="gemini-3.5-flash" {{ ($gemini_model ?? 'gemini-2.5-flash') == 'gemini-3.5-flash' ? 'selected' : '' }}>Gemini 3.5 Flash (Latest, Best Quality)</option>
+                                </select>
+                                <small class="form-text text-muted">Choose the Gemini model for generating news text. 3.5 Flash is newer but may cost slightly more.</small>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="use_grounding" name="use_grounding" value="1" {{ ($use_grounding ?? '1') == '1' ? 'checked' : '' }}>
+                                    <label class="custom-control-label font-weight-bold" for="use_grounding">Enable Google Search Grounding</label>
+                                </div>
+                                <small class="form-text text-muted">When enabled, Gemini will verify facts using real-time Google Search data — reduces hallucination and improves accuracy.</small>
                             </div>
                         </div>
 

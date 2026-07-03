@@ -17,6 +17,10 @@ class SettingController extends Controller
         $facebook_app_secret = Setting::where('key', 'facebook_app_secret')->value('value');
         $facebook_page_access_token = Setting::where('key', 'facebook_page_access_token')->value('value');
         $image_mode = Setting::where('key', 'image_mode')->value('value') ?? 'real';
+        $scheduler_enabled = Setting::where('key', 'scheduler_enabled')->value('value') ?? '0';
+        $scheduler_interval = Setting::where('key', 'scheduler_interval')->value('value') ?? '30';
+        $gemini_model = Setting::where('key', 'gemini_model')->value('value') ?? 'gemini-2.5-flash';
+        $use_grounding = Setting::where('key', 'use_grounding')->value('value') ?? '1';
 
         return view('admin.settings.ai', compact(
             'gemini_api_key',
@@ -24,7 +28,11 @@ class SettingController extends Controller
             'facebook_app_id',
             'facebook_app_secret',
             'facebook_page_access_token',
-            'image_mode'
+            'image_mode',
+            'scheduler_enabled',
+            'scheduler_interval',
+            'gemini_model',
+            'use_grounding'
         ));
     }
 
@@ -37,6 +45,10 @@ class SettingController extends Controller
             'facebook_app_secret' => 'nullable|string',
             'facebook_page_access_token' => 'nullable|string',
             'image_mode' => 'nullable|in:auto,real,animation',
+            'scheduler_enabled' => 'nullable|string',
+            'scheduler_interval' => 'nullable|in:5,10,15,30,60,120',
+            'gemini_model' => 'nullable|in:gemini-2.5-flash,gemini-3.5-flash',
+            'use_grounding' => 'nullable|string',
         ]);
 
         Setting::updateOrCreate(['key' => 'gemini_api_key'], ['value' => $request->gemini_api_key]);
@@ -45,6 +57,10 @@ class SettingController extends Controller
         Setting::updateOrCreate(['key' => 'facebook_app_secret'], ['value' => $request->facebook_app_secret]);
         Setting::updateOrCreate(['key' => 'facebook_page_access_token'], ['value' => $request->facebook_page_access_token]);
         Setting::updateOrCreate(['key' => 'image_mode'], ['value' => $request->image_mode ?? 'real']);
+        Setting::updateOrCreate(['key' => 'scheduler_enabled'], ['value' => $request->has('scheduler_enabled') ? '1' : '0']);
+        Setting::updateOrCreate(['key' => 'scheduler_interval'], ['value' => $request->scheduler_interval ?? '30']);
+        Setting::updateOrCreate(['key' => 'gemini_model'], ['value' => $request->gemini_model ?? 'gemini-2.5-flash']);
+        Setting::updateOrCreate(['key' => 'use_grounding'], ['value' => $request->has('use_grounding') ? '1' : '0']);
 
         return redirect()->back()->with('success', 'AI and Integration Settings updated successfully.');
     }

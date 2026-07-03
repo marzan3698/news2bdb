@@ -20,6 +20,14 @@ class Article extends Model
         'division',
         'district',
         'source_name',
+        'content_hash',
+        'source_url',
+        'meta_description',
+        'tags',
+    ];
+
+    protected $casts = [
+        'tags' => 'array',
     ];
 
     public function category()

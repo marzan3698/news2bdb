@@ -1,0 +1,25 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            git fetch
+            git reset --hard origin/main
+            /opt/alt/php83/usr/bin/php composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+            /opt/alt/php83/usr/bin/php artisan migrate --force
+            /opt/alt/php83/usr/bin/php artisan config:cache
