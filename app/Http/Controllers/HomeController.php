@@ -145,4 +145,23 @@ class HomeController extends Controller
 
         return view('news.show', compact('article', 'latest_articles', 'categories'));
     }
+
+    public function category($slug)
+    {
+        $category = Category::where('slug', $slug)->firstOrFail();
+        
+        $categories = Category::orderBy('order', 'asc')->get();
+
+        $articles = Article::where('status', 'published')
+            ->where('category_id', $category->id)
+            ->latest()
+            ->paginate(12);
+
+        $latest_articles = Article::where('status', 'published')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        return view('news.category', compact('category', 'articles', 'categories', 'latest_articles'));
+    }
 }

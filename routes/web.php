@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ArticleController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/news/{slug}', [HomeController::class, 'show'])->name('news.show');
+Route::get('/category/{slug}', [HomeController::class, 'category'])->name('news.category');
 
 // n8n Webhook API Route (Exempt from CSRF in bootstrap/app.php)
 Route::post('/api/n8n/generate', [\App\Http\Controllers\Api\N8nController::class, 'generate']);

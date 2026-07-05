@@ -707,7 +707,7 @@
                         <ul class="navbar-nav mb-0 w-100">
                             @foreach($categories as $cat)
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">{{ $cat->name }}</a>
+                                    <a class="nav-link {{ request()->is('category/' . $cat->slug) ? 'active' : '' }}" href="{{ route('news.category', $cat->slug) }}">{{ $cat->name }}</a>
                                 </li>
                             @endforeach
                             <li class="nav-item">
@@ -749,7 +749,7 @@
                     <a href="{{ route('home') }}">প্রচ্ছদ</a>
                     <a href="#">সর্বশেষ</a>
                     @foreach($categories as $cat)
-                        <a href="#">{{ $cat->name }}</a>
+                        <a href="{{ route('news.category', $cat->slug) }}">{{ $cat->name }}</a>
                     @endforeach
                     <a href="#">ভিডিও</a>
                     <a href="#">পরিবার</a>
@@ -834,7 +834,7 @@
                 <ul class="list-group list-group-flush">
                     <a href="{{ route('home') }}" class="list-group-item list-group-item-action py-3"><i class="fas fa-home me-2 text-secondary"></i> প্রচ্ছদ</a>
                     @foreach($categories as $cat)
-                        <a href="#" class="list-group-item list-group-item-action py-3"><i class="fas fa-chevron-right me-2 text-secondary" style="font-size:12px;"></i> {{ $cat->name }}</a>
+                        <a href="{{ route('news.category', $cat->slug) }}" class="list-group-item list-group-item-action py-3 {{ request()->is('category/' . $cat->slug) ? 'active' : '' }}"><i class="fas fa-chevron-right me-2 text-secondary" style="font-size:12px;"></i> {{ $cat->name }}</a>
                     @endforeach
                     <a href="#" class="list-group-item list-group-item-action py-3"><i class="fas fa-video me-2 text-secondary"></i> ভিডিও</a>
                     <a href="#" class="list-group-item list-group-item-action py-3"><i class="fas fa-users me-2 text-secondary"></i> পরিবার</a>
