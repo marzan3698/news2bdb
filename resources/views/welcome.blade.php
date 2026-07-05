@@ -342,37 +342,39 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Map & Location Search Widget -->
+                        <div class="map-search-widget mt-4 p-3 bg-white border rounded shadow-sm">
+                            <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-map-marked-alt text-danger"></i> সংবাদের অবস্থান</h6>
+                            <form id="mapSearchForm" action="{{ route('home') }}" method="GET" class="mb-3">
+                                <div class="mb-2">
+                                    <select name="division" id="divisionSelect" class="form-select form-select-sm">
+                                        <option value="">-- বিভাগ নির্বাচন করুন --</option>
+                                        @foreach($divisions as $div)
+                                            <option value="{{ $div }}" {{ $selected_division == $div ? 'selected' : '' }}>{{ $div }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <select name="district" class="form-select form-select-sm">
+                                        <option value="">-- জেলা নির্বাচন করুন --</option>
+                                        @foreach($districts as $dis)
+                                            <option value="{{ $dis }}" {{ $selected_district == $dis ? 'selected' : '' }}>{{ $dis }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-danger btn-sm w-100">খুঁজুন <i class="fas fa-search ms-1"></i></button>
+                            </form>
+                            <!-- Highcharts Map Container -->
+                            <div id="bangladesh-map-container" style="height: 350px; width: 100%;"></div>
+                        </div>
+
                     </div>
                 </div>
             </div>
 
-            <!-- 5. Search by Location Filter Widget -->
-            <div class="location-filter-card">
-                <h6><i class="fas fa-map-marked-alt text-danger"></i> সারাবাংলা সংবাদ অনুসন্ধান</h6>
-                <form action="{{ route('home') }}" method="GET">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-md-5 col-sm-6">
-                            <select name="division" class="form-select">
-                                <option value="">-- বিভাগ নির্বাচন করুন --</option>
-                                @foreach($divisions as $div)
-                                    <option value="{{ $div }}" {{ $selected_division == $div ? 'selected' : '' }}>{{ $div }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-5 col-sm-6">
-                            <select name="district" class="form-select">
-                                <option value="">-- জেলা নির্বাচন করুন --</option>
-                                @foreach($districts as $dis)
-                                    <option value="{{ $dis }}" {{ $selected_district == $dis ? 'selected' : '' }}>{{ $dis }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-sm-12">
-                            <button type="submit" class="btn-search btn">খুঁজুন <i class="fas fa-search ms-1"></i></button>
-                        </div>
-                    </div>
-                </form>
-
+            <!-- Filtered Results Container -->
+            <div class="location-filter-card mb-4" style="background: transparent; border: none; padding: 0;">
                 @if($filtered_articles !== null)
                     <div class="mt-3 border-top pt-3 d-flex justify-content-between align-items-center">
                         <div>
@@ -694,5 +696,74 @@
                 </div>
             </div>
         </div>
+
+@push('scripts')
+<script src="https://code.highcharts.com/maps/highmaps.js"></script>
+<script src="https://code.highcharts.com/mapdata/countries/bd/bd-all.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const divisionMapping = {
+        'bd-da': 'ঢাকা',
+        'bd-cg': 'চট্টগ্রাম',
+        'bd-sy': 'সিলেট',
+        'bd-rj': 'রাজশাহী',
+        'bd-kh': 'খুলনা',
+        'bd-ba': 'বরিশাল',
+        'bd-rp': 'রংপুর',
+        'bd-my': 'ময়মনসিংহ'
+    };
+
+    Highcharts.mapChart('bangladesh-map-container', {
+        chart: {
+            map: 'countries/bd/bd-all',
+            backgroundColor: 'transparent'
+        },
+        title: {
+            text: null
+        },
+        credits: {
+            enabled: false
+        },
+        mapNavigation: {
+            enabled: false
+        },
+        tooltip: {
+            headerFormat: '',
+            pointFormat: '<b>{point.name}</b>'
+        },
+        series: [{
+            data: [
+                ['bd-da', 1], ['bd-cg', 2], ['bd-sy', 3], ['bd-rj', 4],
+                ['bd-kh', 5], ['bd-ba', 6], ['bd-rp', 7], ['bd-my', 8]
+            ],
+            name: 'বিভাগ',
+            color: '#e5e7eb',
+            borderColor: '#ffffff',
+            states: {
+                hover: {
+                    color: '#d92323'
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            point: {
+                events: {
+                    click: function () {
+                        const hcKey = this['hc-key'];
+                        const bnName = divisionMapping[hcKey];
+                        if (bnName) {
+                            const divisionSelect = document.getElementById('divisionSelect');
+                            divisionSelect.value = bnName;
+                            document.getElementById('mapSearchForm').submit();
+                        }
+                    }
+                }
+            }
+        }]
+    });
+});
+</script>
+@endpush
 
 @endsection
