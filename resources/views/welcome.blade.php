@@ -265,7 +265,7 @@
 
 @section('content')
             <!-- 6. Public Lead News / Main Section -->
-            <div class="news-main-section">
+            <div class="news-main-section mt-4">
                 <div class="row">
                     <!-- Left Column: Large Featured Lead Card -->
                     <div class="col-lg-5 col-md-12">
