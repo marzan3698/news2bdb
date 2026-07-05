@@ -772,10 +772,7 @@
                 </div>
             </div>
 
-            <!-- 5. Top Advertisement Banner -->
-            <div class="top-ad-banner">
-                <img src="https://via.placeholder.com/970x90/f1f5f9/94a3b8?text=Advertisement+Space+970x90" alt="Ad">
-            </div>
+
 
             @yield('content')
             
