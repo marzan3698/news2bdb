@@ -343,15 +343,52 @@
                             </div>
                         </div>
                         
-                        <!-- Map & Location Search Widget -->
-                        <div class="map-search-widget mt-4 p-3 bg-white border rounded shadow-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- সারাবাংলা (All Bangladesh) and Map Widget Section -->
+            <div class="category-section-row mt-4">
+                <div class="row">
+                    <!-- Left side: Sarabangla -->
+                    <div class="col-lg-8">
+                        <div class="section-title-bar">
+                            <div class="section-title-text">সারাবাংলা</div>
+                            <a href="#" class="section-more-link">আরও পড়ুন <i class="fas fa-angle-double-right"></i></a>
+                        </div>
+                        <div class="row">
+                            @forelse($sarabangla_articles as $article)
+                                <div class="col-md-6 mb-3">
+                                    <div class="category-news-card h-100">
+                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
+                                        <div class="category-card-body d-flex flex-column">
+                                            <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
+                                            <p class="category-card-summary">{{ $article->summary }}</p>
+                                            <div class="news-meta-info mt-auto">
+                                                <span><i class="far fa-clock"></i> {{ $article->created_at->diffForHumans() }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="col-12 py-3 text-muted text-center">
+                                    সারাবাংলা বিভাগে এখনো কোনো সংবাদ নেই।
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                    
+                    <!-- Right side: Map Widget -->
+                    <div class="col-lg-4">
+                        <div class="map-search-widget p-3 bg-white border rounded shadow-sm h-100 d-flex flex-column">
                             <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-map-marked-alt text-danger"></i> সংবাদের অবস্থান</h6>
-                            <form id="mapSearchForm" action="{{ route('home') }}" method="GET" class="mb-3">
+                            <form id="mapSearchForm" action="{{ route('news.location') }}" method="GET" class="mb-3">
                                 <div class="mb-2">
                                     <select name="division" id="divisionSelect" class="form-select form-select-sm">
                                         <option value="">-- বিভাগ নির্বাচন করুন --</option>
                                         @foreach($divisions as $div)
-                                            <option value="{{ $div }}" {{ $selected_division == $div ? 'selected' : '' }}>{{ $div }}</option>
+                                            <option value="{{ $div }}">{{ $div }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -359,82 +396,16 @@
                                     <select name="district" class="form-select form-select-sm">
                                         <option value="">-- জেলা নির্বাচন করুন --</option>
                                         @foreach($districts as $dis)
-                                            <option value="{{ $dis }}" {{ $selected_district == $dis ? 'selected' : '' }}>{{ $dis }}</option>
+                                            <option value="{{ $dis }}">{{ $dis }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <button type="submit" class="btn btn-danger btn-sm w-100">খুঁজুন <i class="fas fa-search ms-1"></i></button>
                             </form>
                             <!-- Highcharts Map Container -->
-                            <div id="bangladesh-map-container" style="height: 350px; width: 100%;"></div>
+                            <div id="bangladesh-map-container" class="flex-grow-1" style="min-height: 250px; width: 100%;"></div>
                         </div>
-
                     </div>
-                </div>
-            </div>
-
-            <!-- Filtered Results Container -->
-            <div class="location-filter-card mb-4" style="background: transparent; border: none; padding: 0;">
-                @if($filtered_articles !== null)
-                    <div class="mt-3 border-top pt-3 d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>অনুসন্ধানের ফলাফল:</strong> 
-                            <span>{{ $selected_division ? 'বিভাগ: ' . $selected_division : '' }}</span>
-                            <span>{{ $selected_district ? ($selected_division ? ', ' : '') . 'জেলা: ' . $selected_district : '' }}</span>
-                            <span class="badge bg-secondary ms-2">{{ $filtered_articles->count() }}টি সংবাদ</span>
-                        </div>
-                        <a href="{{ route('home') }}" class="btn btn-outline-danger btn-sm">রিসেট করুন <i class="fas fa-undo ms-1"></i></a>
-                    </div>
-                    
-                    <!-- Filtered Articles Grid -->
-                    <div class="row mt-3">
-                        @forelse($filtered_articles as $article)
-                            <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                                <div class="category-news-card">
-                                    <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
-                                    <div class="category-card-body">
-                                        <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
-                                        <p class="category-card-summary">{{ $article->summary }}</p>
-                                        <div class="news-meta-info mt-auto">
-                                            <span><i class="far fa-clock"></i> {{ $article->created_at->diffForHumans() }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="col-12 py-3 text-center text-muted">
-                                <i class="fas fa-info-circle me-1"></i> এই এলাকায় কোনো সংবাদ পাওয়া যায়নি।
-                            </div>
-                        @endforelse
-                    </div>
-                @endif
-            </div>
-
-            <!-- সারাবাংলা (All Bangladesh) Section -->
-            <div class="category-section-row mt-4">
-                <div class="section-title-bar">
-                    <div class="section-title-text">সারাবাংলা</div>
-                    <a href="#" class="section-more-link">আরও পড়ুন <i class="fas fa-angle-double-right"></i></a>
-                </div>
-                <div class="row">
-                    @forelse($sarabangla_articles as $article)
-                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                            <div class="category-news-card">
-                                <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
-                                <div class="category-card-body">
-                                    <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
-                                    <p class="category-card-summary">{{ $article->summary }}</p>
-                                    <div class="news-meta-info mt-auto">
-                                        <span><i class="far fa-clock"></i> {{ $article->created_at->diffForHumans() }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="col-12 py-3 text-muted text-center">
-                            সারাবাংলা বিভাগে এখনো কোনো সংবাদ নেই।
-                        </div>
-                    @endforelse
                 </div>
             </div>
 
@@ -745,7 +716,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             },
             dataLabels: {
-                enabled: false
+                enabled: true,
+                format: '{point.name}',
+                style: {
+                    fontSize: '10px',
+                    fontWeight: 'normal',
+                    textOutline: 'none',
+                    color: '#333'
+                }
             },
             point: {
                 events: {
@@ -753,9 +731,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const hcKey = this['hc-key'];
                         const bnName = divisionMapping[hcKey];
                         if (bnName) {
-                            const divisionSelect = document.getElementById('divisionSelect');
-                            divisionSelect.value = bnName;
-                            document.getElementById('mapSearchForm').submit();
+                            window.location.href = "{{ route('news.location') }}?division=" + encodeURIComponent(bnName);
                         }
                     }
                 }

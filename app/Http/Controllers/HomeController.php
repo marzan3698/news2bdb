@@ -52,21 +52,10 @@ class HomeController extends Controller
             ->take(4)
             ->get();
 
-        // 5. Location Search Filter
-        $selected_division = $request->query('division');
-        $selected_district = $request->query('district');
+        // 5. Location Search Filter variables for the widget (No longer fetching filtered articles here)
+        $selected_division = '';
+        $selected_district = '';
         $filtered_articles = null;
-
-        if ($selected_division || $selected_district) {
-            $query = Article::where('status', 'published');
-            if ($selected_division) {
-                $query->where('division', $selected_division);
-            }
-            if ($selected_district) {
-                $query->where('district', $selected_district);
-            }
-            $filtered_articles = $query->latest()->get();
-        }
 
         // Static lists for the search dropdown
         $divisions = ['ঢাকা', 'চট্টগ্রাম', 'রাজশাহী', 'খুলনা', 'বরিশাল', 'সিলেট', 'রংপুর', 'ময়মনসিংহ'];
@@ -163,5 +152,38 @@ class HomeController extends Controller
             ->get();
 
         return view('news.category', compact('category', 'articles', 'categories', 'latest_articles'));
+    }
+
+    public function location(Request $request)
+    {
+        $division = $request->query('division');
+        $district = $request->query('district');
+        
+        $categories = Category::orderBy('order', 'asc')->get();
+
+        $query = Article::where('status', 'published');
+        
+        $locationName = 'সকল সংবাদ';
+        if ($division) {
+            $query->where('division', $division);
+            $locationName = $division . ' বিভাগের সংবাদ';
+        }
+        if ($district) {
+            $query->where('district', $district);
+            $locationName = $district . ' জেলার সংবাদ';
+        }
+
+        $articles = $query->latest()->paginate(12);
+
+        $latest_articles = Article::where('status', 'published')
+            ->latest()
+            ->take(10)
+            ->get();
+            
+        // For the map widget in the sidebar/wherever
+        $divisions = ['ঢাকা', 'চট্টগ্রাম', 'রাজশাহী', 'খুলনা', 'বরিশাল', 'সিলেট', 'রংপুর', 'ময়মনসিংহ'];
+        $districts = ['ঢাকা', 'গাজীপুর', 'নারায়ণগঞ্জ', 'চট্টগ্রাম', 'কক্সবাজার', 'সিলেট', 'বগুড়া', 'খুলনা', 'রংপুর', 'বরিশাল'];
+
+        return view('news.location', compact('articles', 'categories', 'latest_articles', 'locationName', 'divisions', 'districts', 'division', 'district'));
     }
 }
