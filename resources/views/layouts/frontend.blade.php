@@ -27,7 +27,7 @@
         <!-- Custom Styling for News Portal Layout -->
         <style>
             :root {
-                --primary-green: #1da255;
+                --primary-green: #d92323;
                 --primary-red: #d92323;
                 --text-dark: #222222;
                 --text-grey: #666666;
@@ -199,7 +199,7 @@
                 width: 50px;
             }
             .nav-home-btn:hover {
-                background-color: #15803d !important;
+                background-color: #b51c1c !important;
                 color: #ffffff !important;
             }
             .nav-home-btn::after { display: none; }

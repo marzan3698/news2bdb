@@ -113,7 +113,7 @@
     color: #fff;
     width: 100%;
 }
-.btn-search:hover { background: #15803d; color: #fff; }
+.btn-search:hover { background: #b51c1c; color: #fff; }
 
 /* Category Sections */
 .category-section-row {
@@ -280,7 +280,7 @@
                                     </h2>
                                     <p class="lead-news-summary">{{ $featured_article->summary }}</p>
                                     <div class="news-meta-info">
-                                        <span><i class="fas fa-folder text-success"></i> {{ $featured_article->category->name }}</span>
+                                        <span><i class="fas fa-folder text-danger"></i> {{ $featured_article->category->name }}</span>
                                         <span><i class="far fa-clock"></i> {{ $featured_article->created_at->diffForHumans() }}</span>
                                         <span><i class="far fa-eye"></i> {{ $featured_article->views }} বার পঠিত</span>
                                     </div>
@@ -348,7 +348,7 @@
 
             <!-- 5. Search by Location Filter Widget -->
             <div class="location-filter-card">
-                <h6><i class="fas fa-map-marked-alt text-success"></i> সারাবাংলা সংবাদ অনুসন্ধান</h6>
+                <h6><i class="fas fa-map-marked-alt text-danger"></i> সারাবাংলা সংবাদ অনুসন্ধান</h6>
                 <form action="{{ route('home') }}" method="GET">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-5 col-sm-6">

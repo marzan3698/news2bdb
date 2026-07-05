@@ -5,7 +5,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb bg-white border">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-success"><i class="fas fa-home"></i> প্রচ্ছদ</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-danger"><i class="fas fa-home"></i> প্রচ্ছদ</a></li>
             <li class="breadcrumb-item active" aria-current="page">{{ $category->name }}</li>
         </ol>
     </nav>
