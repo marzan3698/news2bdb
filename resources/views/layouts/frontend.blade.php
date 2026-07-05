@@ -725,9 +725,6 @@
         <!-- 4. Mobile Header & Navbar (Visible only on small screens) -->
         <div class="d-block d-lg-none">
             <div class="mobile-header">
-                <div class="hamburger" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebarOffcanvas" aria-controls="mobileSidebarOffcanvas">
-                    <i class="fas fa-bars"></i>
-                </div>
                 <div class="logo">
                     <a href="{{ route('home') }}" class="text-decoration-none">
                         @if($siteLogo)
@@ -741,6 +738,9 @@
                     <a href="#" class="eng-btn">ENG</a>
                     <div class="search-icon" data-bs-toggle="offcanvas" data-bs-target="#mobileSearchOffcanvas" aria-controls="mobileSearchOffcanvas">
                         <i class="fas fa-search"></i>
+                    </div>
+                    <div class="hamburger" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebarOffcanvas" aria-controls="mobileSidebarOffcanvas">
+                        <i class="fas fa-bars"></i>
                     </div>
                 </div>
             </div>
