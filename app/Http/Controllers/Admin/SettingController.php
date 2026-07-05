@@ -154,8 +154,8 @@ class SettingController extends Controller
         $request->validate([
             'site_title' => 'required|string|max:255',
             'site_description' => 'nullable|string|max:500',
-            'site_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'site_favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'site_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
+            'site_favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
         Setting::updateOrCreate(['key' => 'site_title'], ['value' => $request->site_title]);
