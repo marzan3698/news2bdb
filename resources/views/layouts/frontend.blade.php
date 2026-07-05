@@ -723,7 +723,7 @@
         </div>
 
         <!-- 4. Mobile Header & Navbar (Visible only on small screens) -->
-        <div class="d-block d-lg-none">
+        <div class="d-block d-lg-none sticky-top bg-white" style="z-index: 1040; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
             <div class="mobile-header">
                 <div class="logo">
                     <a href="{{ route('home') }}" class="text-decoration-none">
