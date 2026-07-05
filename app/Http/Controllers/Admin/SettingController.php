@@ -144,8 +144,9 @@ class SettingController extends Controller
         $site_title = Setting::where('key', 'site_title')->value('value') ?? 'বিডিবি নিউজ';
         $site_description = Setting::where('key', 'site_description')->value('value') ?? 'সত্যের সন্ধানে সার্বক্ষণিক';
         $site_logo = Setting::where('key', 'site_logo')->value('value');
+        $site_favicon = Setting::where('key', 'site_favicon')->value('value');
 
-        return view('admin.settings.general', compact('site_title', 'site_description', 'site_logo'));
+        return view('admin.settings.general', compact('site_title', 'site_description', 'site_logo', 'site_favicon'));
     }
 
     public function saveGeneralSettings(Request $request)
@@ -154,6 +155,7 @@ class SettingController extends Controller
             'site_title' => 'required|string|max:255',
             'site_description' => 'nullable|string|max:500',
             'site_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'site_favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         Setting::updateOrCreate(['key' => 'site_title'], ['value' => $request->site_title]);
@@ -168,6 +170,17 @@ class SettingController extends Controller
             
             $logoPath = '/storage/site/' . $name;
             Setting::updateOrCreate(['key' => 'site_logo'], ['value' => $logoPath]);
+        }
+
+        if ($request->hasFile('site_favicon')) {
+            $favicon = $request->file('site_favicon');
+            $faviconName = 'favicon_' . time() . '.' . $favicon->getClientOriginalExtension();
+            
+            // Store favicon under storage/app/public/site
+            $favicon->storeAs('site', $faviconName, 'public');
+            
+            $faviconPath = '/storage/site/' . $faviconName;
+            Setting::updateOrCreate(['key' => 'site_favicon'], ['value' => $faviconPath]);
         }
 
         return redirect()->back()->with('success', 'General Settings updated successfully.');

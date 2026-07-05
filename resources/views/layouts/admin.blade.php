@@ -7,8 +7,11 @@
         <meta content="BDB News - Premium Admin Dashboard" name="description" />
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        @php
+            $site_favicon = \App\Models\Setting::where('key', 'site_favicon')->value('value');
+        @endphp
         <!-- App favicon -->
-        <link rel="shortcut icon" href="{{ asset('admin-assets/images/favicon.ico') }}">
+        <link rel="shortcut icon" href="{{ $site_favicon ? asset($site_favicon) : asset('admin-assets/images/favicon.ico') }}">
 
         <!-- App css -->
         <link href="{{ asset('admin-assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />

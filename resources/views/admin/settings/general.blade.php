@@ -56,7 +56,7 @@
                     <div class="form-group mb-3">
                         <label for="site_logo" class="font-weight-bold">Site Logo (Upload)</label>
                         <input type="file" class="form-control-file" id="site_logo" name="site_logo" accept="image/*">
-                        <small class="form-text text-muted">Upload a transparent PNG/WebP logo. Recommended height: 60px. This logo is overlaid at all four corners of automatically fetched news images.</small>
+                        <small class="form-text text-muted">Upload a transparent PNG/WebP/SVG logo. Recommended size: 250x60px. Max size: 2MB. This logo is overlaid at all four corners of automatically fetched news images.</small>
                     </div>
 
                     @if($site_logo)
@@ -64,6 +64,21 @@
                             <label class="font-weight-bold d-block">Current Logo Preview</label>
                             <div class="p-3 bg-light d-inline-block rounded border">
                                 <img src="{{ $site_logo }}" alt="Site Logo" style="max-height: 60px; object-fit: contain;">
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="form-group mb-3">
+                        <label for="site_favicon" class="font-weight-bold">Site Favicon (Upload)</label>
+                        <input type="file" class="form-control-file" id="site_favicon" name="site_favicon" accept="image/jpeg,image/png,image/gif">
+                        <small class="form-text text-muted">Upload a JPG/PNG/GIF favicon. Recommended size: 32x32px or 16x16px. Max size: 2MB.</small>
+                    </div>
+
+                    @if($site_favicon)
+                        <div class="mb-4">
+                            <label class="font-weight-bold d-block">Current Favicon Preview</label>
+                            <div class="p-3 bg-light d-inline-block rounded border">
+                                <img src="{{ $site_favicon }}" alt="Site Favicon" style="max-height: 32px; object-fit: contain;">
                             </div>
                         </div>
                     @endif
