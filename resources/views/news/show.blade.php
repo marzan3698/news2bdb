@@ -246,7 +246,7 @@
 
     <div class="row mt-4">
         <!-- Left Sidebar (Meta Info) -->
-        <div class="col-md-2">
+        <div class="col-md-2 order-2 order-md-1 mt-4 mt-md-0">
             <div class="left-sidebar-meta">
                 <div class="category-badge-large">{{ $article->category->name ?? 'সংবাদ' }}</div>
                 
@@ -277,7 +277,7 @@
         </div>
 
         <!-- Middle Column (Main Content) -->
-        <div class="col-md-7">
+        <div class="col-md-7 order-1 order-md-2">
             <h1 class="article-title">{{ $article->title }}</h1>
             
             @if($article->image_url)
@@ -308,7 +308,7 @@
         </div>
 
         <!-- Right Sidebar -->
-        <div class="col-md-3">
+        <div class="col-md-3 order-3 order-md-3 mt-4 mt-md-0">
             <!-- Ad Placeholder -->
             <div class="right-sidebar-ad">
                 <span class="badge badge-danger mb-2">বিজ্ঞাপন</span><br>
