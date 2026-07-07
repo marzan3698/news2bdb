@@ -186,6 +186,12 @@
                                 <i class="mdi mdi-monitor"></i><span>Dashboard</span>
                             </a>
                         </li>
+                        <li class="mt-2 mb-2 px-3">
+                            <a href="{{ route('admin.news-engine') }}" class="{{ request()->routeIs('admin.news-engine') ? 'active' : '' }}" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #fff; border-radius: 8px; font-weight: bold; padding: 12px 15px; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(253, 160, 133, 0.4); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <i class="mdi mdi-robot mr-2" style="font-size: 18px; color: #fff;"></i>
+                                <span style="color: #fff; font-size: 14px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">News Engine</span>
+                            </a>
+                        </li>
                         <li>
                             <a href="javascript: void(0);"><i class="mdi mdi-book-open-page-variant"></i><span>Articles</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
                             <ul class="nav-second-level" aria-expanded="false">

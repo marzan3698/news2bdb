@@ -56,6 +56,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
     Route::delete('/articles/{id}', [ArticleController::class, 'destroy'])->name('articles.destroy');
     Route::post('/articles/auto-generate', [ArticleController::class, 'autoGenerate'])->name('articles.autoGenerate');
+    Route::get('/news-engine', [ArticleController::class, 'newsEngine'])->name('news-engine');
 });
 
 Route::middleware('auth')->group(function () {

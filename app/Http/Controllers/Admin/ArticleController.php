@@ -16,8 +16,13 @@ class ArticleController extends Controller
 {
     public function index()
     {
+        return view('admin.articles.index');
+    }
+
+    public function newsEngine()
+    {
         $categories = Category::all();
-        return view('admin.articles.index', compact('categories'));
+        return view('admin.news-engine', compact('categories'));
     }
 
     public function data()
