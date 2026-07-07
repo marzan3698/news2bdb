@@ -63,7 +63,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'index'])->name('index');
         Route::post('/toggle-status', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'toggleStatus'])->name('toggle-status');
         Route::get('/snews', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'snews'])->name('snews');
-        Route::post('/clone', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'cloneNews'])->name('clone');
+        Route::post('/clone/fetch', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'fetchRssNews'])->name('clone.fetch');
+        Route::post('/clone/process', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'processNewsItem'])->name('clone.process');
     });
 });
 

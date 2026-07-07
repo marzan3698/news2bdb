@@ -50,9 +50,9 @@ class SourceToNewsController extends Controller
     }
 
     /**
-     * Clone N news from Jagonews24 RSS
+     * Fetch N news items from Jagonews24 RSS
      */
-    public function cloneNews(Request $request)
+    public function fetchRssNews(Request $request)
     {
         $request->validate([
             'number_of_news' => 'required|integer|min:1|max:20'
@@ -66,7 +66,6 @@ class SourceToNewsController extends Controller
         $numToClone = (int) $request->input('number_of_news');
         $feedUrl = 'https://www.jagonews24.com/rss/rss.xml';
         
-        // Use the same User-Agent bypass technique from NewsGeneratorService
         $userAgents = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
@@ -101,37 +100,29 @@ class SourceToNewsController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid RSS XML structure.']);
         }
 
-        $service = new \App\Services\NewsGeneratorService();
         $recentUrls = Article::pluck('source_url')->filter()->toArray();
-        $userId = auth()->id();
-        
-        $clonedCount = 0;
-        $failedCount = 0;
+        $itemsToProcess = [];
 
         foreach ($xml->channel->item as $item) {
-            if ($clonedCount >= $numToClone) {
+            if (count($itemsToProcess) >= $numToClone) {
                 break;
             }
 
             $url = (string)($item->link ?? '');
             if (empty($url) || in_array($url, $recentUrls)) {
-                continue; // Skip if already cloned
+                continue;
             }
 
             $headline = (string)($item->title ?? '');
             $content = strip_tags((string)($item->description ?? ''));
             
-            // Extract Image
             $imageUrl = '';
-            
-            // Handle media:content namespace
             $namespaces = $item->getNameSpaces(true);
             $media = isset($namespaces['media']) ? $item->children($namespaces['media']) : null;
             if ($media && isset($media->content)) {
                 $imageUrl = (string)$media->content->attributes()->url;
             }
             
-            // Fallback: check enclosure or regex in description
             if (empty($imageUrl)) {
                 if (isset($item->enclosure) && isset($item->enclosure['url'])) {
                     $imageUrl = (string)$item->enclosure['url'];
@@ -147,28 +138,52 @@ class SourceToNewsController extends Controller
                 continue;
             }
 
-            $customSourceData = [
+            $itemsToProcess[] = [
                 'headline' => $headline,
                 'content' => $content,
                 'url' => $url,
                 'image_url' => $imageUrl,
                 'name' => 'jago 1',
-                'force_use_source' => true // Force Gemini to NOT ignore this source
+                'force_use_source' => true
             ];
+        }
 
-            // Send to the NewsGeneratorService to rewrite with Gemini and generate Image
-            $result = $service->generate([], $userId, $customSourceData);
-            
-            if (isset($result['success']) && $result['success']) {
-                $clonedCount++;
-            } else {
-                $failedCount++;
-            }
+        if (empty($itemsToProcess)) {
+            return response()->json(['success' => false, 'message' => 'No new articles found to clone.']);
         }
 
         return response()->json([
-            'success' => true, 
-            'message' => "Cloned $clonedCount news items successfully. " . ($failedCount > 0 ? "($failedCount failed/skipped)" : "")
+            'success' => true,
+            'items' => $itemsToProcess
         ]);
+    }
+
+    /**
+     * Process a single news item
+     */
+    public function processNewsItem(Request $request)
+    {
+        $item = $request->input('item');
+        if (empty($item) || empty($item['url'])) {
+            return response()->json(['success' => false, 'message' => 'Invalid item data provided.']);
+        }
+
+        // Prevent concurrent duplicates
+        if (Article::where('source_url', $item['url'])->exists()) {
+            return response()->json(['success' => true, 'message' => 'Already exists']);
+        }
+
+        try {
+            $service = new \App\Services\NewsGeneratorService();
+            $result = $service->generate([], auth()->id(), $item);
+
+            if (isset($result['success']) && $result['success']) {
+                return response()->json(['success' => true, 'message' => 'Article processed successfully']);
+            } else {
+                return response()->json(['success' => false, 'message' => $result['message'] ?? 'Failed during AI generation']);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 }

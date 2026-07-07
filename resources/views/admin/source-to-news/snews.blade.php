@@ -81,7 +81,7 @@ $(document).ready(function() {
                 step: 1
             },
             showCancelButton: true,
-            confirmButtonText: 'Clone',
+            confirmButtonText: 'Start Cloning',
             showLoaderOnConfirm: true,
             preConfirm: (num) => {
                 if (!num || num <= 0) {
@@ -90,30 +90,89 @@ $(document).ready(function() {
                 }
                 
                 return $.ajax({
-                    url: "{{ route('admin.source-to-news.clone') }}",
+                    url: "{{ route('admin.source-to-news.clone.fetch') }}",
                     type: "POST",
                     data: {
                         _token: "{{ csrf_token() }}",
                         number_of_news: num
                     }
                 }).then(response => {
-                    if (!response.success) {
-                        throw new Error(response.message || 'Error fetching news');
+                    if (!response.success || !response.items || response.items.length === 0) {
+                        throw new Error(response.message || 'No new articles found to clone.');
                     }
-                    return response;
+                    return response.items;
                 }).catch(error => {
                     Swal.showValidationMessage(
-                        `Request failed: ${error.message || 'Unknown error'}`
+                        `Failed: ${error.message || 'Unknown error'}`
                     );
                 });
             },
             allowOutsideClick: () => !Swal.isLoading()
-        }).then((result) => {
-            if (result.isConfirmed) {
+        }).then(async (result) => {
+            if (result.isConfirmed && result.value) {
+                const items = result.value;
+                const total = items.length;
+                let successCount = 0;
+                let failCount = 0;
+
+                // Open a new Swal for progress
                 Swal.fire({
-                    title: 'Success!',
-                    text: result.value.message,
-                    icon: 'success'
+                    title: 'Cloning News...',
+                    html: `
+                        <div class="mb-3 text-left">
+                            <strong>Status:</strong> <span id="clone-status">Initializing...</span><br>
+                            <small class="text-muted" id="clone-headline"></small>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div id="clone-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <div class="mt-2">
+                            <small><span id="clone-count">0</span> of ${total} processed</small>
+                        </div>
+                    `,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false
+                });
+
+                // Loop through items sequentially
+                for (let i = 0; i < total; i++) {
+                    const item = items[i];
+                    $('#clone-status').text(`Generating AI content for item ${i + 1}...`);
+                    $('#clone-headline').text(item.headline);
+
+                    try {
+                        const processResp = await $.ajax({
+                            url: "{{ route('admin.source-to-news.clone.process') }}",
+                            type: "POST",
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                item: item
+                            }
+                        });
+
+                        if (processResp.success) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                            console.error("Item processing failed:", processResp.message);
+                        }
+                    } catch (err) {
+                        failCount++;
+                        console.error("AJAX error during processing:", err);
+                    }
+
+                    const percent = Math.round(((i + 1) / total) * 100);
+                    $('#clone-progress-bar').css('width', `${percent}%`).text(`${percent}%`).attr('aria-valuenow', percent);
+                    $('#clone-count').text(i + 1);
+                }
+
+                // Complete
+                Swal.fire({
+                    title: 'Completed!',
+                    html: `Successfully cloned <b>${successCount}</b> news items.<br>${failCount > 0 ? `<b>${failCount}</b> items failed.` : ''}`,
+                    icon: successCount > 0 ? 'success' : (failCount > 0 ? 'error' : 'info'),
+                    confirmButtonText: 'OK'
                 }).then(() => {
                     location.reload();
                 });
