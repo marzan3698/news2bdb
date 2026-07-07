@@ -64,7 +64,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('js')
 <!-- Sweet-Alert  -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -122,4 +122,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endsection
+@endpush

@@ -49,7 +49,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('js')
 <script>
 $(document).ready(function() {
     $('.source-status-toggle').on('change', function() {
@@ -76,4 +76,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endsection
+@endpush
