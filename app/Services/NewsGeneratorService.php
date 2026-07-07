@@ -717,16 +717,25 @@ class NewsGeneratorService
     protected function buildPrompt(string $categoryName, array $sourceData, array $recentTitles): string
     {
         $currentDate = now('Asia/Dhaka')->format('l, d F Y, h:i A');
-        $prompt = "Generate a short hot news article about Bangladesh. The news MUST belong to the category: \"{$categoryName}\".\n";
+        $prompt = "Generate a highly engaging, deeply researched news article about Bangladesh. The news MUST belong to the category: \"{$categoryName}\".\n";
         $prompt .= "CRITICAL: Today's date and time is {$currentDate}. Ensure all references to time (like 'today', 'yesterday', 'this morning') are relative to this exact date and time. Do NOT invent dates from the past like 2024.\n";
         $prompt .= "CRITICAL: The news MUST BE ABOUT THE ABSOLUTE LATEST, MOST RECENT event (within the last 1-2 hours) happening in Bangladesh.\n";
+
+        // Special Category Logic
+        if (mb_stripos($categoryName, 'রাজনীতি') !== false || mb_stripos($categoryName, 'politics') !== false) {
+            $prompt .= "SPECIAL RULE (POLITICAL SCIENCE): This is a Politics category. You MUST write this from a 'Political Science of Bangladesh' perspective. Do not just report the event; provide deep analysis, background context, and insights that make people eager to read and understand the political mechanics behind the news.\n";
+        } elseif (mb_stripos($categoryName, 'সায়েন্স') !== false || mb_stripos($categoryName, 'science') !== false) {
+            $prompt .= "SPECIAL RULE (SCIENCE): This is a Science-related category. You MUST focus on new, unknown, and groundbreaking scientific phenomena or facts related to the topic. The content should be extremely attractive and spark curiosity in the reader's mind about the wonders of science.\n";
+        } else {
+            $prompt .= "GENERAL RULE: Your writing style must be heavily research-based, highly attractive, and curiosity-inducing. Make the reader want to know more.\n";
+        }
 
         if (!empty($sourceData['headline']) && !empty($sourceData['content'])) {
             $sourceName = $sourceData['name'] ?? 'Unknown';
             $prompt .= "Ground the news article using the following source information from \"{$sourceName}\" (translate, rewrite, and format it, making it fresh, engaging, and unique):\n";
             $prompt .= "Source Headline: {$sourceData['headline']}\n";
             $prompt .= "Source Content:\n" . mb_substr($sourceData['content'], 0, 2000, 'UTF-8') . "\n\n";
-            $prompt .= "CRITICAL: If the source news content DOES NOT fit/belong to the category \"{$categoryName}\", you MUST ignore the source news entirely and instead generate a fresh, unique news story about Bangladesh that belongs to the category \"{$categoryName}\".\n";
+            $prompt .= "CRITICAL: If the source news content DOES NOT fit/belong to the category \"{$categoryName}\", you MUST ignore the source news entirely and instead generate a fresh, unique, and deeply researched story about Bangladesh that belongs to the category \"{$categoryName}\".\n";
         }
 
         if (!empty($recentTitles)) {
@@ -739,15 +748,15 @@ class NewsGeneratorService
 
         $prompt .= 'Return ONLY a valid JSON object with the structure below. Do not wrap the response in ```json markdown code blocks.
 {
-  "title": "Headline in Bengali (SEO-friendly, 60-80 characters)",
-  "summary": "A concise SEO-friendly summary in Bengali (120-160 characters) for meta description and social sharing",
+  "title": "Headline in Bengali (Highly engaging, SEO-friendly, 60-80 characters)",
+  "summary": "A concise SEO-friendly summary in Bengali (120-160 characters) that sparks high curiosity",
   "category": "Must be: ' . $categoryName . '",
-  "content": "3-5 paragraphs of detailed news content in Bengali formatted in HTML (use <p> tags). Include quotes from relevant sources if applicable. Make it informative, factual, and engaging.",
+  "content": "3-5 paragraphs of detailed, research-based news content in Bengali formatted in HTML (use <p> tags). Include quotes or insights. Make it deeply informative, factual, and extremely engaging.",
   "tags": ["3-5 relevant Bengali tags for SEO, e.g. ঢাকা, রাজনীতি, অর্থনীতি"],
   "source_matched": true or false (set to true if you used the provided source news because it belongs to the category "' . $categoryName . '", or false if you ignored the source news because it did not belong to "' . $categoryName . '" and generated a fresh story instead),
   "district": "Name of the district in Bengali (e.g., ঢাকা, রাজবাড়ী, সিলেট, চট্টগ্রাম) if the news is specific to a location/district in Bangladesh, otherwise null or empty string",
   "division": "Name of the division in Bengali (e.g., ঢাকা, চট্টগ্রাম, সিলেট) if the news is specific to a location/division in Bangladesh, otherwise null or empty string",
-  "image_prompt": "A highly detailed English prompt for generating an ultra-realistic, authentic journalistic news photograph. CRITICAL: If the news involves specific real-world people (e.g. Bangladeshi politicians, cricketers, actors), DO NOT ask to draw their faces! Instead, generate a generic, symbolic, or abstract photo representing the context (e.g., \'A generic cricket stadium with players\', \'An abstract political gavel\', \'A bustling street in Dhaka\'). The prompt must specify professional editorial photography, vivid colors, and NO text in the image."
+  "image_prompt": "A highly detailed English prompt for generating an ULTRA-HIGHLY ENERGETIC, EYE-CATCHING, and CURIOSITY-INDUCING cinematic banner image. CRITICAL: NEVER ask to draw specific real-world people\'s faces (e.g. politicians, cricketers). Instead, generate a highly dramatic, symbolic, or abstract scene representing the core theme with vivid colors, dynamic lighting, and action. NO text in the image."
 }';
 
         return $prompt;

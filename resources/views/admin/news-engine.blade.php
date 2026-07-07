@@ -17,134 +17,136 @@
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-10">
         
-        <!-- Autopilot Modern Controller Card -->
-        <div id="autopilot-controller" class="card shadow-lg border-0 mb-4" style="display: none; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border-radius: 15px;">
-            <div class="card-body d-flex justify-content-between align-items-center p-4">
-                <div class="d-flex align-items-center">
-                    <div class="spinner-grow text-danger mr-3" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+        <!-- STEP 1: Category Selection -->
+        <div id="step-1-categories" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white font-weight-bold" style="font-size: 1.2rem;">
+                <i class="mdi mdi-format-list-bulleted mr-2"></i> Step 1: Select a Category for AI Generation
+            </div>
+            <div class="card-body p-4 bg-light">
+                <div class="row">
+                    @foreach($categories as $category)
+                    <div class="col-md-4 col-sm-6 mb-3">
+                        <div class="card h-100 category-card" onclick="selectCategory({{ $category->id }}, '{{ $category->name }}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-left: 4px solid #2a5298;">
+                            <div class="card-body d-flex align-items-center justify-content-center text-center">
+                                <h5 class="mb-0 text-dark font-weight-bold">{{ $category->name }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: Autopilot Setup (Hidden initially) -->
+        <div id="step-2-setup" style="display: none;">
+            
+            <button class="btn btn-secondary mb-3" onclick="backToStep1()">
+                <i class="mdi mdi-arrow-left mr-1"></i> Back to Categories
+            </button>
+
+            <!-- Autopilot Modern Controller Card (Running State) -->
+            <div id="autopilot-controller" class="card shadow-lg border-0 mb-4" style="display: none; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border-radius: 15px;">
+                <div class="card-body d-flex justify-content-between align-items-center p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-grow text-danger mr-3" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                        <div>
+                            <h4 class="text-white mb-1 fw-bold">AI Autopilot is Running (<span id="running-category-name"></span>)</h4>
+                            <p class="mb-0 text-light opacity-75" id="autopilot-status-text">Generating next post in 30s...</p>
+                        </div>
+                    </div>
+                    <div class="text-center mx-4">
+                        <h2 class="text-white mb-0 fw-bold" id="autopilot-post-count">0</h2>
+                        <span class="text-light text-uppercase" style="letter-spacing: 1px; font-size: 12px;">Posts Generated</span>
+                    </div>
                     <div>
-                        <h4 class="text-white mb-1 fw-bold">AI Autopilot is Running</h4>
-                        <p class="mb-0 text-light opacity-75" id="autopilot-status-text">Generating next post in 30s...</p>
+                        <button type="button" class="btn btn-danger btn-lg shadow-sm" onclick="stopAiLoop()" style="border-radius: 30px; padding: 10px 30px;">
+                            <i class="mdi mdi-stop-circle-outline mr-2"></i> Stop Autopilot
+                        </button>
                     </div>
                 </div>
-                <div class="text-center mx-4">
-                    <h2 class="text-white mb-0 fw-bold" id="autopilot-post-count">0</h2>
-                    <span class="text-light text-uppercase" style="letter-spacing: 1px; font-size: 12px;">Posts Generated</span>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-danger btn-lg shadow-sm" onclick="stopAiLoop()" style="border-radius: 30px; padding: 10px 30px;">
-                        <i class="mdi mdi-stop-circle-outline mr-2"></i> Stop Autopilot
-                    </button>
+                <!-- Error Log Section inside Controller (Hidden by default) -->
+                <div id="autopilot-error-log" class="card-footer bg-dark text-danger font-monospace" style="display: none; max-height: 200px; overflow-y: auto; font-size: 0.85rem; text-align: left;">
+                    <div class="font-weight-bold mb-1"><i class="mdi mdi-alert-circle-outline mr-1"></i>Error Log:</div>
+                    <div id="autopilot-error-messages"></div>
                 </div>
             </div>
-            <!-- Error Log Section inside Controller (Hidden by default) -->
-            <div id="autopilot-error-log" class="card-footer bg-dark text-danger font-monospace" style="display: none; max-height: 200px; overflow-y: auto; font-size: 0.85rem; text-align: left;">
-                <div class="font-weight-bold mb-1"><i class="mdi mdi-alert-circle-outline mr-1"></i>Error Log:</div>
-                <div id="autopilot-error-messages"></div>
+
+            <!-- Setup Card -->
+            <div class="card border-warning" id="setup-card">
+                <div class="card-header bg-warning text-dark font-weight-bold" style="font-size: 1.2rem;">
+                    <i class="mdi mdi-robot mr-2"></i> Step 2: AI Autopilot Setup for <span id="setup-category-name" class="badge badge-dark ml-2"></span>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">Set the interval (in seconds) for the AI to automatically pick hot news and post it. Minimum is 30 seconds.</p>
+                    
+                    <input type="hidden" id="selectedCategoryId" value="">
+
+                    <div class="form-group">
+                        <label for="aiInterval" class="font-weight-bold">Post every (seconds):</label>
+                        <input type="number" class="form-control form-control-lg" id="aiInterval" value="30" min="30">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiPostLimit" class="font-weight-bold">Number of posts to generate (0 for unlimited):</label>
+                        <input type="number" class="form-control form-control-lg" id="aiPostLimit" value="0" min="0">
+                    </div>
+                    
+                    <div id="ai-status" class="alert alert-info mt-4" style="display: none;">
+                        <div class="spinner-border spinner-border-sm text-info mr-2" role="status"></div>
+                        <span id="ai-status-text">AI is working...</span>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <button type="button" class="btn btn-success btn-lg px-5 shadow" id="btn-start-ai" onclick="startAiLoop()">
+                            <i class="mdi mdi-power mr-2"></i> Start Autopilot
+                        </button>
+                    </div>
+                </div>
             </div>
+
         </div>
 
-        <!-- Setup Card -->
-        <div class="card border-warning" id="setup-card">
-            <div class="card-header bg-warning text-dark font-weight-bold" style="font-size: 1.2rem;">
-                <i class="mdi mdi-robot mr-2"></i> AI Autopilot Setup
-            </div>
-            <div class="card-body p-4">
-                <p class="text-muted mb-4">Set the interval (in seconds) for the AI to automatically pick hot news and post it. Minimum is 30 seconds.</p>
-                
-                <div class="form-group">
-                    <label for="aiInterval" class="font-weight-bold">Post every (seconds):</label>
-                    <input type="number" class="form-control form-control-lg" id="aiInterval" value="30" min="30">
-                </div>
-
-                <div class="form-group">
-                    <label for="aiPostLimit" class="font-weight-bold">Number of posts to generate (0 for unlimited):</label>
-                    <input type="number" class="form-control form-control-lg" id="aiPostLimit" value="0" min="0">
-                </div>
-
-                <div class="form-group">
-                    <label for="aiCategories" class="font-weight-bold">Target Categories (Leave empty to rotate all):</label>
-                    <select class="form-control select2" id="aiCategories" name="categories[]" multiple="multiple" style="width: 100%;">
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div id="ai-status" class="alert alert-info mt-4" style="display: none;">
-                    <div class="spinner-border spinner-border-sm text-info mr-2" role="status"></div>
-                    <span id="ai-status-text">AI is working...</span>
-                </div>
-                
-                <div class="mt-4 text-center">
-                    <button type="button" class="btn btn-success btn-lg px-5 shadow" id="btn-start-ai" onclick="startAiLoop()">
-                        <i class="mdi mdi-power mr-2"></i> Start Autopilot
-                    </button>
-                </div>
-            </div>
-        </div>
-        
     </div>
 </div>
 @endsection
 
 @push('css')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    /* Styling to make Select2 look beautiful and match the admin theme */
-    .select2-container--default .select2-selection--multiple {
-        border: 1px solid #e3ebf6 !important;
-        border-radius: 0.25rem !important;
-        min-height: 48px !important;
-        padding: 5px 6px !important;
-    }
-    .select2-container--default.select2-container--focus .select2-selection--multiple {
-        border-color: #2a5298 !important;
-        box-shadow: 0 0 0 0.2rem rgba(42, 82, 152, 0.15) !important;
-    }
-    .select2-dropdown {
-        border-color: #e3ebf6 !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
-        z-index: 99999 !important;
-    }
-    .select2-container--default .select2-results__option--highlighted[aria-selected] {
-        background-color: #2a5298 !important;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        background-color: #2a5298 !important;
-        border: 1px solid #1e3c72 !important;
-        color: white !important;
-        border-radius: 3px !important;
-        padding: 2px 10px !important;
-        margin-top: 6px !important;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        color: rgba(255,255,255,0.7) !important;
-        margin-right: 5px !important;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-        color: white !important;
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        background-color: #f8f9fa;
     }
 </style>
 @endpush
 
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
     let aiIntervalTimer = null;
     let isAiRunning = false;
     let generatedCount = 0;
 
-    $(document).ready(function() {
-        $('.select2').select2({
-            placeholder: "Select Categories (Leave empty to rotate all)",
-            allowClear: true
-        });
-    });
+    function selectCategory(id, name) {
+        $('#selectedCategoryId').val(id);
+        $('#setup-category-name').text(name);
+        $('#running-category-name').text(name);
+        
+        $('#step-1-categories').hide();
+        $('#step-2-setup').fadeIn();
+    }
+
+    function backToStep1() {
+        if (isAiRunning) {
+            Swal.fire('Warning', 'You must stop the Autopilot before changing categories.', 'warning');
+            return;
+        }
+        $('#step-2-setup').hide();
+        $('#step-1-categories').fadeIn();
+    }
 
     function logAiError(message) {
         const errorLog = $('#autopilot-error-log');
@@ -158,7 +160,8 @@
         $('#ai-status').show();
         $('#ai-status-text').text('AI is generating news... Please wait.');
         
-        const categories = $('#aiCategories').val();
+        // Pass selected category as array to match existing controller logic
+        const categories = [$('#selectedCategoryId').val()]; 
         
         $.ajax({
             url: "{{ route('admin.articles.autoGenerate') }}",
@@ -228,7 +231,6 @@
         $('#btn-start-ai').prop('disabled', true);
         $('#aiInterval').prop('disabled', true);
         $('#aiPostLimit').prop('disabled', true);
-        $('#aiCategories').prop('disabled', true);
         $('#autopilot-error-log').hide();
         $('#autopilot-error-messages').empty();
         $('#autopilot-post-count').text('0');
@@ -251,10 +253,8 @@
         $('#btn-start-ai').prop('disabled', false);
         $('#aiInterval').prop('disabled', false);
         $('#aiPostLimit').prop('disabled', false);
-        $('#aiCategories').prop('disabled', false);
         $('#ai-status').hide();
         
-        // Show setup card, hide controller card
         $('#autopilot-controller').slideUp();
         $('#setup-card').slideDown();
     }
