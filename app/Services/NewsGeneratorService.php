@@ -735,7 +735,12 @@ class NewsGeneratorService
             $prompt .= "Ground the news article using the following source information from \"{$sourceName}\" (translate, rewrite, and format it, making it fresh, engaging, and unique):\n";
             $prompt .= "Source Headline: {$sourceData['headline']}\n";
             $prompt .= "Source Content:\n" . mb_substr($sourceData['content'], 0, 2000, 'UTF-8') . "\n\n";
-            $prompt .= "CRITICAL: If the source news content DOES NOT fit/belong to the category \"{$categoryName}\", you MUST ignore the source news entirely and instead generate a fresh, unique, and deeply researched story about Bangladesh that belongs to the category \"{$categoryName}\".\n";
+            
+            if (!empty($sourceData['force_use_source'])) {
+                $prompt .= "CRITICAL: You MUST use this source news and rewrite it. DO NOT ignore it. It does not matter if it fits the category perfectly, just adapt it.\n";
+            } else {
+                $prompt .= "CRITICAL: If the source news content DOES NOT fit/belong to the category \"{$categoryName}\", you MUST ignore the source news entirely and instead generate a fresh, unique, and deeply researched story about Bangladesh that belongs to the category \"{$categoryName}\".\n";
+            }
         }
 
         if (!empty($recentTitles)) {

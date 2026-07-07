@@ -123,16 +123,23 @@ class SourceToNewsController extends Controller
             
             // Extract Image
             $imageUrl = '';
-            // Jagonews usually puts image in <enclosure> or inside <description> as <img src="...">
-            // Let's check enclosure first
-            if (isset($item->enclosure) && isset($item->enclosure['url'])) {
-                $imageUrl = (string)$item->enclosure['url'];
-            } 
-            // Fallback: regex search in raw description (if we didn't strip tags)
+            
+            // Handle media:content namespace
+            $namespaces = $item->getNameSpaces(true);
+            $media = isset($namespaces['media']) ? $item->children($namespaces['media']) : null;
+            if ($media && isset($media->content)) {
+                $imageUrl = (string)$media->content->attributes()->url;
+            }
+            
+            // Fallback: check enclosure or regex in description
             if (empty($imageUrl)) {
-                $rawDesc = (string)($item->description ?? '');
-                if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $rawDesc, $match)) {
-                    $imageUrl = $match[1];
+                if (isset($item->enclosure) && isset($item->enclosure['url'])) {
+                    $imageUrl = (string)$item->enclosure['url'];
+                } else {
+                    $rawDesc = (string)($item->description ?? '');
+                    if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $rawDesc, $match)) {
+                        $imageUrl = $match[1];
+                    }
                 }
             }
 
@@ -145,7 +152,8 @@ class SourceToNewsController extends Controller
                 'content' => $content,
                 'url' => $url,
                 'image_url' => $imageUrl,
-                'name' => 'jago 1'
+                'name' => 'jago 1',
+                'force_use_source' => true // Force Gemini to NOT ignore this source
             ];
 
             // Send to the NewsGeneratorService to rewrite with Gemini and generate Image
