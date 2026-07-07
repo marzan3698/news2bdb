@@ -1126,9 +1126,25 @@ class NewsGeneratorService
             imagealphablending($canvas, true);
             imagesavealpha($canvas, true);
 
-            // Background color for banner (Dark Red matching the example)
-            $redColor = imagecolorallocate($canvas, 153, 0, 0); 
-            imagefill($canvas, 0, 0, $redColor);
+            // Background gradient for banner (Dark Red to darker red/black)
+            for ($y = $finalH; $y < $totalHeight; $y++) {
+                $progress = ($y - $finalH) / $bannerHeight; // 0.0 to 1.0
+                $r = (int)(180 - (100 * $progress)); // 180 down to 80
+                $color = imagecolorallocate($canvas, $r, 0, 0);
+                imageline($canvas, 0, $y, $finalW, $y, $color);
+            }
+
+            // Top border for the banner
+            $topBorderColor = imagecolorallocate($canvas, 255, 100, 100); // Lighter red/pinkish border
+            imageline($canvas, 0, $finalH, $finalW, $finalH, $topBorderColor);
+            imageline($canvas, 0, $finalH + 1, $finalW, $finalH + 1, $topBorderColor);
+
+            // Light shade (drop shadow) just below the border
+            for ($i = 0; $i < 6; $i++) {
+                $shadowAlpha = 90 + ($i * 6); // Fading out shadow
+                $shadowColor = imagecolorallocatealpha($canvas, 0, 0, 0, $shadowAlpha);
+                imageline($canvas, 0, $finalH + 2 + $i, $finalW, $finalH + 2 + $i, $shadowColor);
+            }
 
             // Copy the resized image to the top of the canvas
             imagecopyresampled($canvas, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
@@ -1172,8 +1188,9 @@ class NewsGeneratorService
                 $englishFontPath = public_path('fonts/HindSiliguri-Bold.ttf'); // Assuming this exists
                 
                 if (file_exists($bengaliFontPath)) {
-                    $fontSize = 32; // Larger text
+                    $fontSize = 28; // Smaller text to prevent overflow
                     $whiteColor = imagecolorallocate($canvas, 255, 255, 255);
+                    $shadowColor = imagecolorallocatealpha($canvas, 0, 0, 0, 60); // Text shadow
                     $yellowColor = imagecolorallocate($canvas, 255, 204, 0); // Website link color
                     
                     try {
@@ -1193,7 +1210,11 @@ class NewsGeneratorService
                     
                     // Center the text in the top part of the banner, leaving space for the website link
                     $titleAreaHeight = $bannerHeight - 40; 
-                    $startY = $finalH + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize;
+                    
+                    // Calculate starting Y and ensure it doesn't overflow above the banner
+                    $calculatedStartY = $finalH + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize;
+                    $minStartY = $finalH + $fontSize + 15; // At least 15px below the border
+                    $startY = max($minStartY, $calculatedStartY);
 
                     foreach ($originalLines as $line) {
                         // Split line into English/Number tokens and Bengali/Symbol tokens
@@ -1234,6 +1255,9 @@ class NewsGeneratorService
                         // Draw tokens horizontally centered
                         $startX = (int)(($finalW - $lineWidth) / 2);
                         foreach ($tokenData as $td) {
+                            // Draw text shadow
+                            @imagettftext($canvas, $fontSize, 0, $startX + 2, $startY + 2, $shadowColor, $td['font'], $td['text']);
+                            // Draw main text
                             @imagettftext($canvas, $fontSize, 0, $startX, $startY, $whiteColor, $td['font'], $td['text']);
                             $startX += $td['width'];
                         }
@@ -1241,14 +1265,18 @@ class NewsGeneratorService
                         $startY += $lineHeight;
                     }
                     
-                    // Add Website URL at the very bottom of the image
+                    // Add Website URL at the left bottom
                     $websiteText = "www.bdbnews.com";
                     $websiteFontSize = 14;
-                    $websiteBox = @imagettfbbox($websiteFontSize, 0, $englishFontPath, $websiteText);
-                    $websiteWidth = $websiteBox ? abs($websiteBox[2] - $websiteBox[0]) : 150;
-                    $websiteX = (int)(($finalW - $websiteWidth) / 2);
                     $websiteY = $totalHeight - 15; // 15px from bottom
-                    @imagettftext($canvas, $websiteFontSize, 0, $websiteX, $websiteY, $yellowColor, $englishFontPath, $websiteText);
+                    @imagettftext($canvas, $websiteFontSize, 0, 25, $websiteY, $yellowColor, $englishFontPath, $websiteText);
+                    
+                    // Add AI Powered at the right bottom
+                    $aiText = "AI Powered";
+                    $aiBox = @imagettfbbox($websiteFontSize, 0, $englishFontPath, $aiText);
+                    $aiWidth = $aiBox ? abs($aiBox[2] - $aiBox[0]) : 100;
+                    $aiX = $finalW - $aiWidth - 25;
+                    @imagettftext($canvas, $websiteFontSize, 0, $aiX, $websiteY, $yellowColor, $englishFontPath, $aiText);
                 }
             }
 
