@@ -213,9 +213,15 @@
                                 <li><a href="{{ route('admin.settings.general') }}">General Settings</a></li>
                                 <li><a href="{{ route('admin.settings.ai') }}">AI Integration</a></li>
                                 <li><a href="{{ route('admin.settings.n8n') }}">n8n Setup</a></li>
-                                <li><a href="{{ route('admin.settings.n8n-facebook') }}">n8n +Facebook</a></li>
                                 <li><a href="{{ route('admin.ai-sources.index') }}">AI Sources</a></li>
                             </ul>
+                        </li>
+                        </li>
+                        <li class="mt-3 px-3">
+                            <a href="{{ route('admin.settings.n8n-facebook') }}" style="background: linear-gradient(135deg, #1877F2 0%, #0e5a1b 100%); color: white; border-radius: 8px; padding: 12px 15px; font-weight: bold; text-align: center; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(24, 119, 242, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <i class="mdi mdi-facebook mr-2" style="font-size: 18px; color: white;"></i>
+                                <span style="color: white; font-size: 14px;">n8n +Facebook post</span>
+                            </a>
                         </li>
                     </ul>
                 </div>
