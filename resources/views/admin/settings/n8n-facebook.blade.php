@@ -112,20 +112,19 @@
         "httpRequestMethod": "POST",
         "node": "me",
         "edge": "photos",
-        "options": {},
-        "sendBody": true,
-        "specifyBody": "keypair",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "url",
-              "value": "=@{{ $('Webhook').item.json.body.image }}"
-            },
-            {
-              "name": "message",
-              "value": "=@{{ $('Webhook').item.json.body.title }}\n\n@{{ $('Webhook').item.json.body.subtitle }}\n\nবিস্তারিত পড়ুন: @{{ $('Webhook').item.json.body.url }}\n\n@{{ $('Webhook').item.json.body.tags }}"
-            }
-          ]
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "url",
+                "value": "=@{{ $('Webhook').item.json.body.image }}"
+              },
+              {
+                "name": "message",
+                "value": "=@{{ $('Webhook').item.json.body.title }}\n\n@{{ $('Webhook').item.json.body.subtitle }}\n\nবিস্তারিত পড়ুন: @{{ $('Webhook').item.json.body.url }}\n\n@{{ $('Webhook').item.json.body.tags }}"
+              }
+            ]
+          }
         }
       },
       "name": "Facebook Graph API",
