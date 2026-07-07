@@ -9,7 +9,7 @@
             <div class="page-title-box">
                 <div class="row">
                     <div class="col-12 d-flex justify-content-between align-items-center">
-                        <h4 class="page-title">News from jago 1</h4>
+                        <h4 class="page-title">News from Fixed Sources</h4>
                         <button class="btn btn-primary" id="add-new-news-btn">
                             <i class="fas fa-plus mr-2"></i> Add new news
                         </button>
@@ -71,7 +71,7 @@
 $(document).ready(function() {
     $('#add-new-news-btn').on('click', function() {
         Swal.fire({
-            title: 'Clone from jago 1',
+            title: 'Clone from Fixed Sources',
             input: 'number',
             inputLabel: 'Number of news to clone (e.g. 2 or 8)',
             inputValue: 2,

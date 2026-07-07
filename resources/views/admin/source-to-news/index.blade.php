@@ -35,8 +35,18 @@
                                 <td>jago 1</td>
                                 <td>
                                     <div class="custom-control custom-switch switch-success">
-                                        <input type="checkbox" class="custom-control-input source-status-toggle" id="source-toggle" {{ $jagoStatus == '1' ? 'checked' : '' }}>
-                                        <label class="custom-control-label" for="source-toggle"></label>
+                                        <input type="checkbox" class="custom-control-input source-status-toggle" id="source-toggle-1" data-source="jago1" {{ $jagoStatus == '1' ? 'checked' : '' }}>
+                                        <label class="custom-control-label" for="source-toggle-1"></label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>prothom 1</td>
+                                <td>
+                                    <div class="custom-control custom-switch switch-success">
+                                        <input type="checkbox" class="custom-control-input source-status-toggle" id="source-toggle-2" data-source="prothom1" {{ $prothomStatus == '1' ? 'checked' : '' }}>
+                                        <label class="custom-control-label" for="source-toggle-2"></label>
                                     </div>
                                 </td>
                             </tr>
@@ -54,13 +64,15 @@
 $(document).ready(function() {
     $('.source-status-toggle').on('change', function() {
         var status = $(this).prop('checked') ? 1 : 0;
+        var source = $(this).data('source');
         
         $.ajax({
             url: "{{ route('admin.source-to-news.toggle-status') }}",
             type: "POST",
             data: {
                 _token: "{{ csrf_token() }}",
-                status: status
+                status: status,
+                source: source
             },
             success: function(response) {
                 if(response.success) {
