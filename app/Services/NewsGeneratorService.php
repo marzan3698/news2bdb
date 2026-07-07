@@ -1119,24 +1119,19 @@ class NewsGeneratorService
             }
 
             // Banner configuration
-            $overlayHeight = (int)($finalH * 0.40);
-            $overlayStartY = $finalH - $overlayHeight;
+            $bannerHeight = (int)($finalH * 0.40);
+            $totalHeight = $finalH + $bannerHeight;
 
-            $canvas = imagecreatetruecolor($finalW, $finalH);
+            $canvas = imagecreatetruecolor($finalW, $totalHeight);
             imagealphablending($canvas, true);
             imagesavealpha($canvas, true);
 
-            // Copy the resized image to the full canvas
-            imagecopyresampled($canvas, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
+            // Background color for banner (Dark Red matching the example)
+            $redColor = imagecolorallocate($canvas, 153, 0, 0); 
+            imagefill($canvas, 0, 0, $redColor);
 
-            // Draw Dark Red Gradient Overlay on the bottom 40%
-            for ($y = $overlayStartY; $y < $finalH; $y++) {
-                $progress = ($y - $overlayStartY) / $overlayHeight;
-                // Fade from transparent (127) to opaque dark red (0)
-                $alpha = (int)(127 * (1 - pow($progress, 0.7))); 
-                $color = imagecolorallocatealpha($canvas, 130, 0, 0, $alpha);
-                imageline($canvas, 0, $y, $finalW, $y, $color);
-            }
+            // Copy the resized image to the top of the canvas
+            imagecopyresampled($canvas, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
 
             // Top-left logo overlay (Only one logo now)
             $logoPath = Setting::where('key', 'site_logo')->value('value');
@@ -1196,9 +1191,9 @@ class NewsGeneratorService
                     $lineHeight = $fontSize * 1.6;
                     $totalTextHeight = $totalLines * $lineHeight;
                     
-                    // Center the text in the top part of the overlay, leaving space for the website link
-                    $titleAreaHeight = $overlayHeight - 40; 
-                    $startY = $overlayStartY + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize;
+                    // Center the text in the top part of the banner, leaving space for the website link
+                    $titleAreaHeight = $bannerHeight - 40; 
+                    $startY = $finalH + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize;
 
                     foreach ($originalLines as $line) {
                         // Split line into English/Number tokens and Bengali/Symbol tokens
@@ -1252,7 +1247,7 @@ class NewsGeneratorService
                     $websiteBox = @imagettfbbox($websiteFontSize, 0, $englishFontPath, $websiteText);
                     $websiteWidth = $websiteBox ? abs($websiteBox[2] - $websiteBox[0]) : 150;
                     $websiteX = (int)(($finalW - $websiteWidth) / 2);
-                    $websiteY = $finalH - 15; // 15px from bottom
+                    $websiteY = $totalHeight - 15; // 15px from bottom
                     @imagettftext($canvas, $websiteFontSize, 0, $websiteX, $websiteY, $yellowColor, $englishFontPath, $websiteText);
                 }
             }
