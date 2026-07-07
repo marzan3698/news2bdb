@@ -747,7 +747,7 @@ class NewsGeneratorService
   "source_matched": true or false (set to true if you used the provided source news because it belongs to the category "' . $categoryName . '", or false if you ignored the source news because it did not belong to "' . $categoryName . '" and generated a fresh story instead),
   "district": "Name of the district in Bengali (e.g., ঢাকা, রাজবাড়ী, সিলেট, চট্টগ্রাম) if the news is specific to a location/district in Bangladesh, otherwise null or empty string",
   "division": "Name of the division in Bengali (e.g., ঢাকা, চট্টগ্রাম, সিলেট) if the news is specific to a location/division in Bangladesh, otherwise null or empty string",
-  "image_prompt": "A highly detailed English prompt for generating an ultra-realistic, authentic journalistic news photograph of the news event. The prompt must specify professional editorial photography, DSLR camera, hyper-realistic, vivid colors, believable real-world news scene, and NO text in the image. E.g., A photorealistic news photograph of..."
+  "image_prompt": "A highly detailed English prompt for generating an ultra-realistic, authentic journalistic news photograph. CRITICAL: If the news involves specific real-world people (e.g. Bangladeshi politicians, cricketers, actors), DO NOT ask to draw their faces! Instead, generate a generic, symbolic, or abstract photo representing the context (e.g., \'A generic cricket stadium with players\', \'An abstract political gavel\', \'A bustling street in Dhaka\'). The prompt must specify professional editorial photography, vivid colors, and NO text in the image."
 }';
 
         return $prompt;
