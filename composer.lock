@@ -4,8 +4,55 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4bdc6d852774bebe9117a314054b7fd6",
+    "content-hash": "6cde33f1a1d1c501215edf454a43257f",
     "packages": [
+        {
+            "name": "ar_nishan/bangla_converter",
+            "version": "v1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ARNishan/Bangla-Converter-Package-Laravel.git",
+                "reference": "db3508554b93097790b60dd7410643ade7d12d49"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ARNishan/Bangla-Converter-Package-Laravel/zipball/db3508554b93097790b60dd7410643ade7d12d49",
+                "reference": "db3508554b93097790b60dd7410643ade7d12d49",
+                "shasum": ""
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Translator": "ArNishan\\BanglaConverter\\Facades\\Translator"
+                    },
+                    "providers": [
+                        "ArNishan\\BanglaConverter\\TranslatorServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ArNishan\\BanglaConverter\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "ArNishan",
+                    "email": "nishanrahman1994@gmail.com"
+                }
+            ],
+            "description": "Bangla/Bengali string transformation library which can convert Bangla string Unicode/Avro to Bijoy and also Bijoy to Avro",
+            "support": {
+                "issues": "https://github.com/ARNishan/Bangla-Converter-Package-Laravel/issues",
+                "source": "https://github.com/ARNishan/Bangla-Converter-Package-Laravel/tree/v1.0.2"
+            },
+            "time": "2022-06-12T19:33:12+00:00"
+        },
         {
             "name": "barryvdh/laravel-debugbar",
             "version": "v4.4.0",

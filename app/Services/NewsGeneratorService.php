@@ -1130,8 +1130,8 @@ class NewsGeneratorService
                     
                     // Translate Unicode title to Bijoy ANSI for correct Bengali rendering in GD
                     try {
-                        $translator = new \MirazMac\BanglaString\Translator\AvroToBijoy\Translator();
-                        $bijoyTitle = $translator->translate($title);
+                        $translator = new \ArNishan\BanglaConverter\Translate();
+                        $bijoyTitle = $translator->unicodeToBijoy($title);
                     } catch (\Throwable $e) {
                         $bijoyTitle = $title;
                     }
