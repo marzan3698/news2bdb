@@ -1123,13 +1123,21 @@ class NewsGeneratorService
 
             // Write Title on Red Banner
             if (!empty($title)) {
-                $fontPath = public_path('fonts/HindSiliguri-Bold.ttf');
+                $fontPath = public_path('fonts/SutonnyMJ-Bold.ttf');
                 if (file_exists($fontPath)) {
                     $fontSize = 24;
                     $whiteColor = imagecolorallocate($canvas, 255, 255, 255);
                     
+                    // Translate Unicode title to Bijoy ANSI for correct Bengali rendering in GD
+                    try {
+                        $translator = new \MirazMac\BanglaString\Translator\AvroToBijoy\Translator();
+                        $bijoyTitle = $translator->translate($title);
+                    } catch (\Throwable $e) {
+                        $bijoyTitle = $title;
+                    }
+
                     // Wrap text to fit inside the banner (with some padding)
-                    $wrappedText = $this->wrapTtfText($fontSize, $fontPath, $title, $finalW - 40);
+                    $wrappedText = $this->wrapTtfText($fontSize, $fontPath, $bijoyTitle, $finalW - 40);
                     
                     // Calculate text bounding box to center it vertically inside the banner
                     $bbox = @imagettfbbox($fontSize, 0, $fontPath, $wrappedText);
