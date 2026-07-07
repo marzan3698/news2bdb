@@ -877,31 +877,31 @@ class NewsGeneratorService
         if ($this->imageMode === 'real') {
             // Real mode: use source image, fallback to AI if nothing found
             if ($realImgResult) {
-                $processed = $this->applyGdProcessing($realImgResult['data'], $realImgResult['ext']);
+                $processed = $this->applyGdProcessing($realImgResult['data'], $realImgResult['ext'], $newsData['title'] ?? '');
                 $imageUrl = $this->saveImageToStorage($processed, $realImgResult['ext']);
             } else {
                 // Fallback: generate AI image so articles never go without images
                 $aiResult = $this->generateGeminiImage($newsData['image_prompt'] ?? 'news event in bangladesh');
                 if ($aiResult) {
-                    $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext']);
+                    $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext'], $newsData['title'] ?? '');
                     $imageUrl = $this->saveImageToStorage($processed, $aiResult['ext']);
                 }
             }
         } elseif ($this->imageMode === 'auto') {
             if ($realImgResult) {
-                $processed = $this->applyGdProcessing($realImgResult['data'], $realImgResult['ext']);
+                $processed = $this->applyGdProcessing($realImgResult['data'], $realImgResult['ext'], $newsData['title'] ?? '');
                 $imageUrl = $this->saveImageToStorage($processed, $realImgResult['ext']);
             } else {
                 $aiResult = $this->generateGeminiImage($newsData['image_prompt'] ?? 'news event in bangladesh');
                 if ($aiResult) {
-                    $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext']);
+                    $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext'], $newsData['title'] ?? '');
                     $imageUrl = $this->saveImageToStorage($processed, $aiResult['ext']);
                 }
             }
         } elseif ($this->imageMode === 'animation') {
             $aiResult = $this->generateGeminiImage($newsData['image_prompt'] ?? 'news event in bangladesh flat design vector art');
             if ($aiResult) {
-                $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext']);
+                $processed = $this->applyGdProcessing($aiResult['data'], $aiResult['ext'], $newsData['title'] ?? '');
                 $imageUrl = $this->saveImageToStorage($processed, $aiResult['ext']);
             }
         }
@@ -1025,9 +1025,27 @@ class NewsGeneratorService
     }
 
     /**
-     * GD Processing: 5% crop from all sides + 4-corner logo watermark.
+     * Helper to wrap TTF text
      */
-    protected function applyGdProcessing(string $rawData, string $ext): string
+    protected function wrapTtfText($fontSize, $fontFace, $string, $width) {
+        $ret = "";
+        $arr = explode(' ', $string);
+        foreach ($arr as $word) {
+            $teststring = $ret . ' ' . $word;
+            $testbox = @imagettfbbox($fontSize, 0, $fontFace, $teststring);
+            if ($testbox && ($testbox[2] - $testbox[0]) > $width) {
+                $ret .= ($ret == "" ? "" : "\n") . $word;
+            } else {
+                $ret .= ($ret == "" ? "" : ' ') . $word;
+            }
+        }
+        return $ret;
+    }
+
+    /**
+     * GD Processing: 5% crop from all sides + Red Title Banner + Top-left Logo watermark.
+     */
+    protected function applyGdProcessing(string $rawData, string $ext, string $title = ''): string
     {
         if (!function_exists('imagecreatefromstring')) return $rawData;
 
@@ -1055,12 +1073,22 @@ class NewsGeneratorService
                 $finalH = $ch;
             }
 
-            $cropped = imagecreatetruecolor($finalW, $finalH);
-            imagealphablending($cropped, false);
-            imagesavealpha($cropped, true);
-            imagecopyresampled($cropped, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
+            // Banner configuration
+            $bannerHeight = 120; // Fixed red space height at the bottom
+            $totalHeight = $finalH + $bannerHeight;
 
-            // 4-corner logo overlay
+            $canvas = imagecreatetruecolor($finalW, $totalHeight);
+            imagealphablending($canvas, true);
+            imagesavealpha($canvas, true);
+
+            // Background color for banner (Dark Red matching the example)
+            $redColor = imagecolorallocate($canvas, 153, 0, 0); 
+            imagefill($canvas, 0, 0, $redColor);
+
+            // Copy the resized image to the top of the canvas
+            imagecopyresampled($canvas, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
+
+            // Top-left logo overlay (Only one logo now)
             $logoPath = Setting::where('key', 'site_logo')->value('value');
             if ($logoPath) {
                 $logoFile = public_path($logoPath);
@@ -1071,20 +1099,21 @@ class NewsGeneratorService
                         if ($logoGd !== false) {
                             $lw = imagesx($logoGd);
                             $lh = imagesy($logoGd);
-                            $newLw = 60;
+                            $newLw = 80; // slightly larger for top-left
                             $newLh = (int)($lh * ($newLw / $lw));
+                            
                             $scaled = imagecreatetruecolor($newLw, $newLh);
                             imagealphablending($scaled, false);
                             imagesavealpha($scaled, true);
                             $transparent = imagecolorallocatealpha($scaled, 0, 0, 0, 127);
                             imagefill($scaled, 0, 0, $transparent);
                             imagecopyresampled($scaled, $logoGd, 0, 0, 0, 0, $newLw, $newLh, $lw, $lh);
-                            imagealphablending($cropped, true);
+                            
+                            imagealphablending($canvas, true);
                             $pad = 15;
-                            imagecopy($cropped, $scaled, $pad, $pad, 0, 0, $newLw, $newLh);
-                            imagecopy($cropped, $scaled, $finalW - $newLw - $pad, $pad, 0, 0, $newLw, $newLh);
-                            imagecopy($cropped, $scaled, $pad, $finalH - $newLh - $pad, 0, 0, $newLw, $newLh);
-                            imagecopy($cropped, $scaled, $finalW - $newLw - $pad, $finalH - $newLh - $pad, 0, 0, $newLw, $newLh);
+                            // Only copy to top-left
+                            imagecopy($canvas, $scaled, $pad, $pad, 0, 0, $newLw, $newLh);
+                            
                             imagedestroy($logoGd);
                             imagedestroy($scaled);
                         }
@@ -1092,20 +1121,48 @@ class NewsGeneratorService
                 }
             }
 
+            // Write Title on Red Banner
+            if (!empty($title)) {
+                $fontPath = public_path('fonts/HindSiliguri-Bold.ttf');
+                if (file_exists($fontPath)) {
+                    $fontSize = 24;
+                    $whiteColor = imagecolorallocate($canvas, 255, 255, 255);
+                    
+                    // Wrap text to fit inside the banner (with some padding)
+                    $wrappedText = $this->wrapTtfText($fontSize, $fontPath, $title, $finalW - 40);
+                    
+                    // Calculate text bounding box to center it vertically inside the banner
+                    $bbox = @imagettfbbox($fontSize, 0, $fontPath, $wrappedText);
+                    if ($bbox) {
+                        $textWidth = $bbox[2] - $bbox[0];
+                        $textHeight = $bbox[1] - $bbox[7];
+                        
+                        $x = (int)(($finalW - $textWidth) / 2);
+                        // Center vertically within the banner area
+                        $y = $finalH + (int)(($bannerHeight - $textHeight) / 2) + $fontSize; 
+                        
+                        @imagettftext($canvas, $fontSize, 0, $x, $y, $whiteColor, $fontPath, $wrappedText);
+                    }
+                }
+            }
+
             ob_start();
             match ($ext) {
-                'png' => imagepng($cropped),
-                'webp' => imagewebp($cropped, null, 80),
-                default => imagejpeg($cropped, null, 75),
+                'png' => imagepng($canvas),
+                'webp' => imagewebp($canvas, null, 80),
+                default => imagejpeg($canvas, null, 75),
             };
-            $out = ob_get_clean();
+            $outputData = ob_get_clean();
+
             imagedestroy($gdImg);
-            imagedestroy($cropped);
-            return $out ?: $rawData;
+            imagedestroy($canvas);
+
+            return $outputData !== false ? $outputData : $rawData;
         } catch (\Throwable $e) {
             return $rawData;
         }
     }
+
 
     protected function generateGeminiImage(string $prompt): ?array
     {
