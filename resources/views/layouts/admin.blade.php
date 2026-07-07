@@ -200,6 +200,17 @@
                                 <li><a href="#">Categories</a></li>
                             </ul>
                         </li>
+                        <!-- Source to news -->
+                        <li>
+                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                <i class="fas fa-rss"></i>
+                                <span>Source to news</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="{{ route('admin.source-to-news.index') }}">All source list</a></li>
+                                <li><a href="{{ route('admin.source-to-news.snews') }}">Add new Snews</a></li>
+                            </ul>
+                        </li>
                         <li>
                             <a href="javascript: void(0);"><i class="mdi mdi-clipboard-outline"></i><span>Users Database</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
                             <ul class="nav-second-level" aria-expanded="false">

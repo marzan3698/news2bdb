@@ -57,6 +57,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/articles/{id}', [ArticleController::class, 'destroy'])->name('articles.destroy');
     Route::post('/articles/auto-generate', [ArticleController::class, 'autoGenerate'])->name('articles.autoGenerate');
     Route::get('/news-engine', [ArticleController::class, 'newsEngine'])->name('news-engine');
+
+    // Source to News Feature
+    Route::prefix('source-to-news')->name('source-to-news.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'index'])->name('index');
+        Route::post('/toggle-status', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'toggleStatus'])->name('toggle-status');
+        Route::get('/snews', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'snews'])->name('snews');
+        Route::post('/clone', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'cloneNews'])->name('clone');
+    });
 });
 
 Route::middleware('auth')->group(function () {
