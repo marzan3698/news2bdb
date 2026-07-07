@@ -273,8 +273,8 @@
         <!-- Real-time AI Generation Polling Script -->
         <script>
             $(document).ready(function() {
-                // Initial load time
-                let lastCheckedAt = new Date().toISOString();
+                // Initial load ID to prevent showing old logs on refresh
+                let lastLogId = {{ \App\Models\GenerationLog::max('id') ?? 0 }};
                 
                 // Base64 short sounds to avoid external dependencies
                 const successSound = new Audio('data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'); // Fallback tiny silent mp3, we will use a better beep below
@@ -285,11 +285,11 @@
                     $.ajax({
                         url: "{{ route('admin.api.latest-logs') }}",
                         method: "GET",
-                        data: { last_checked_at: lastCheckedAt },
+                        data: { last_log_id: lastLogId },
                         success: function(response) {
                             if(response.logs && response.logs.length > 0) {
-                                // Update last checked time to the latest log's created_at
-                                lastCheckedAt = response.logs[response.logs.length - 1].created_at;
+                                // Update last checked ID to the latest log's id
+                                lastLogId = response.logs[response.logs.length - 1].id;
                                 
                                 let hasError = false;
                                 let hasSuccess = false;

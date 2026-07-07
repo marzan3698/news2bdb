@@ -21,15 +21,16 @@ class AdminController extends Controller
 
     public function getLatestLogs(Request $request)
     {
-        $lastCheckedAt = $request->query('last_checked_at');
+        $lastLogId = $request->query('last_log_id', 0);
         
-        if (!$lastCheckedAt) {
+        if ($lastLogId <= 0) {
+            // For safety, if no ID passed, don't dump the whole table
             return response()->json(['logs' => []]);
         }
 
         $logs = \App\Models\GenerationLog::with('article')
-                    ->where('created_at', '>', $lastCheckedAt)
-                    ->orderBy('created_at', 'asc')
+                    ->where('id', '>', $lastLogId)
+                    ->orderBy('id', 'asc')
                     ->get();
                     
         return response()->json(['logs' => $logs]);
