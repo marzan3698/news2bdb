@@ -186,4 +186,18 @@ class HomeController extends Controller
 
         return view('news.location', compact('articles', 'categories', 'latest_articles', 'locationName', 'divisions', 'districts', 'division', 'district'));
     }
+
+    public function privacy()
+    {
+        $categories = Category::orderBy('order', 'asc')->get();
+        $latest_articles = Article::where('status', 'published')->latest()->take(10)->get();
+        return view('pages.privacy', compact('categories', 'latest_articles'));
+    }
+
+    public function terms()
+    {
+        $categories = Category::orderBy('order', 'asc')->get();
+        $latest_articles = Article::where('status', 'published')->latest()->take(10)->get();
+        return view('pages.terms', compact('categories', 'latest_articles'));
+    }
 }
