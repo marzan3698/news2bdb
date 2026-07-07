@@ -111,8 +111,8 @@
       "parameters": {
         "pageId": "ME",
         "postType": "photo",
-        "message": "={{$node[\"Webhook\"].json[\"body\"][\"title\"]}}\n\n{{$node[\"Webhook\"].json[\"body\"][\"subtitle\"]}}\n\nবিস্তারিত পড়ুন: {{$node[\"Webhook\"].json[\"body\"][\"url\"]}}\n\n{{$node[\"Webhook\"].json[\"body\"][\"tags\"]}}",
-        "url": "={{$node[\"Webhook\"].json[\"body\"][\"image\"]}}",
+        "message": "=@{{$node[\"Webhook\"].json[\"body\"][\"title\"]}}\n\n@{{$node[\"Webhook\"].json[\"body\"][\"subtitle\"]}}\n\nবিস্তারিত পড়ুন: @{{$node[\"Webhook\"].json[\"body\"][\"url\"]}}\n\n@{{$node[\"Webhook\"].json[\"body\"][\"tags\"]}}",
+        "url": "=@{{$node[\"Webhook\"].json[\"body\"][\"image\"]}}",
         "options": {}
       },
       "name": "Facebook Graph API",
