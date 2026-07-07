@@ -57,10 +57,18 @@ class NewsGeneratorService
         }
 
         try {
-            // 1. Determine target category (rotation logic)
-            $targetCategory = $this->resolveTargetCategory($categoryIds);
-            $categoryName = $targetCategory ? $targetCategory->name : 'জাতীয়';
-            $categoryId = $targetCategory?->id;
+            // 1. Determine target category (rotation logic) unless force_use_source is active
+            $isForcedSource = !empty($customSourceData['force_use_source']);
+            
+            if ($isForcedSource) {
+                $targetCategory = null;
+                $categoryName = '';
+                $categoryId = null;
+            } else {
+                $targetCategory = $this->resolveTargetCategory($categoryIds);
+                $categoryName = $targetCategory ? $targetCategory->name : 'জাতীয়';
+                $categoryId = $targetCategory?->id;
+            }
 
             // 3. Get recent titles and URLs for duplicate prevention
             $recentTitles = $this->getRecentTitles(25);
@@ -73,7 +81,8 @@ class NewsGeneratorService
                     'content'   => $customSourceData['content'] ?? '',
                     'url'       => $customSourceData['url'] ?? '',
                     'image_url' => $customSourceData['image_url'] ?? '',
-                    'name'      => 'n8n Push',
+                    'name'      => $customSourceData['name'] ?? 'n8n Push',
+                    'force_use_source' => $customSourceData['force_use_source'] ?? false,
                 ];
             } else {
                 $sourceData = $this->fetchFromSources($categoryId, $recentUrls);
@@ -99,10 +108,20 @@ class NewsGeneratorService
                 }
             }
 
+            // Assign category ID from AI response if it was dynamic
+            if (empty($categoryId) && !empty($newsData['category'])) {
+                $matchedCat = Category::where('name', trim($newsData['category']))->first();
+                if ($matchedCat) {
+                    $categoryId = $matchedCat->id;
+                } else {
+                    $categoryId = Category::first()->id ?? 1;
+                }
+            }
+
             // 6. Check duplicate by hash
             $contentHash = $this->computeHash($newsData['title'], $sourceData['url'] ?? null);
             if ($this->isDuplicate($contentHash)) {
-                return $this->fail('Duplicate content detected — skipped.', $categoryId, $startTime, 'skipped');
+                return $this->fail('Duplicate content detected — skipped.', $categoryId ?? null, $startTime, 'skipped');
             }
 
             // 7. Process image
@@ -717,6 +736,32 @@ class NewsGeneratorService
     protected function buildPrompt(string $categoryName, array $sourceData, array $recentTitles): string
     {
         $currentDate = now('Asia/Dhaka')->format('l, d F Y, h:i A');
+        
+        // --- DYNAMIC CLONING LOGIC ---
+        if (!empty($sourceData['force_use_source'])) {
+            $categoriesList = Category::pluck('name')->implode(', ');
+            $prompt = "Generate a highly engaging, SEO-friendly news article about Bangladesh in Bengali. You MUST completely translate, rewrite and adapt the provided source news accurately. DO NOT ignore the source.\n";
+            $prompt .= "CRITICAL: Today's date and time is {$currentDate}. Ensure all references to time are relative to this exact date.\n";
+            $prompt .= "Source Headline: {$sourceData['headline']}\n";
+            $prompt .= "Source Content:\n" . mb_substr($sourceData['content'], 0, 2000, 'UTF-8') . "\n\n";
+            $prompt .= "You must classify this news into ONE of the following EXACT categories: [{$categoriesList}].\n";
+            
+            $prompt .= 'Return ONLY a valid JSON object with the structure below. Do not wrap the response in ```json markdown code blocks.
+{
+  "title": "Headline in Bengali (Highly engaging, SEO-friendly, 60-80 characters)",
+  "summary": "A concise SEO-friendly summary in Bengali (120-160 characters)",
+  "category": "Pick exactly one category from the allowed list: ' . $categoriesList . '",
+  "content": "3-5 paragraphs of detailed news content in Bengali formatted in HTML (use <p> tags). Include quotes or insights. Make it deeply informative and extremely engaging.",
+  "tags": ["3-5 relevant Bengali tags for SEO"],
+  "source_matched": true,
+  "district": "Name of the district in Bengali (e.g., ঢাকা), otherwise null",
+  "division": "Name of the division in Bengali (e.g., ঢাকা), otherwise null",
+  "image_prompt": "A highly detailed English prompt for generating an ULTRA-HIGHLY ENERGETIC banner image. CRITICAL: NEVER ask to draw specific real-world people\'s faces. Instead, generate a highly dramatic, symbolic scene representing the core theme with vivid colors. NO text in the image."
+}';
+            return $prompt;
+        }
+
+        // --- REGULAR AUTOPILOT/ROTATION LOGIC ---
         $prompt = "Generate a highly engaging, deeply researched news article about Bangladesh. The news MUST belong to the category: \"{$categoryName}\".\n";
         $prompt .= "CRITICAL: Today's date and time is {$currentDate}. Ensure all references to time (like 'today', 'yesterday', 'this morning') are relative to this exact date and time. Do NOT invent dates from the past like 2024.\n";
         $prompt .= "CRITICAL: The news MUST BE ABOUT THE ABSOLUTE LATEST, MOST RECENT event (within the last 1-2 hours) happening in Bangladesh.\n";
@@ -735,12 +780,7 @@ class NewsGeneratorService
             $prompt .= "Ground the news article using the following source information from \"{$sourceName}\" (translate, rewrite, and format it, making it fresh, engaging, and unique):\n";
             $prompt .= "Source Headline: {$sourceData['headline']}\n";
             $prompt .= "Source Content:\n" . mb_substr($sourceData['content'], 0, 2000, 'UTF-8') . "\n\n";
-            
-            if (!empty($sourceData['force_use_source'])) {
-                $prompt .= "CRITICAL: You MUST use this source news and rewrite it. DO NOT ignore it. It does not matter if it fits the category perfectly, just adapt it.\n";
-            } else {
-                $prompt .= "CRITICAL: If the source news content DOES NOT fit/belong to the category \"{$categoryName}\", you MUST ignore the source news entirely and instead generate a fresh, unique, and deeply researched story about Bangladesh that belongs to the category \"{$categoryName}\".\n";
-            }
+            $prompt .= "CRITICAL: If the source news content DOES NOT fit/belong to the category \"{$categoryName}\", you MUST ignore the source news entirely and instead generate a fresh, unique, and deeply researched story about Bangladesh that belongs to the category \"{$categoryName}\".\n";
         }
 
         if (!empty($recentTitles)) {
