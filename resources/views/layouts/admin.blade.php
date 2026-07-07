@@ -213,6 +213,7 @@
                                 <li><a href="{{ route('admin.settings.general') }}">General Settings</a></li>
                                 <li><a href="{{ route('admin.settings.ai') }}">AI Integration</a></li>
                                 <li><a href="{{ route('admin.settings.n8n') }}">n8n Setup</a></li>
+                                <li><a href="{{ route('admin.settings.n8n-facebook') }}">n8n +Facebook</a></li>
                                 <li><a href="{{ route('admin.ai-sources.index') }}">AI Sources</a></li>
                             </ul>
                         </li>

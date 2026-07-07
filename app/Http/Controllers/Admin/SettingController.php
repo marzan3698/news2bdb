@@ -191,4 +191,20 @@ class SettingController extends Controller
         $n8n_api_key = Setting::where('key', 'n8n_api_key')->value('value');
         return view('admin.settings.n8n', compact('n8n_api_key'));
     }
+    public function n8nFacebook()
+    {
+        $n8n_facebook_webhook_url = Setting::where('key', 'n8n_facebook_webhook_url')->value('value');
+        return view('admin.settings.n8n-facebook', compact('n8n_facebook_webhook_url'));
+    }
+
+    public function saveN8nFacebook(Request $request)
+    {
+        $request->validate([
+            'n8n_facebook_webhook_url' => 'nullable|url',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'n8n_facebook_webhook_url'], ['value' => $request->n8n_facebook_webhook_url]);
+
+        return redirect()->back()->with('success', 'n8n Facebook Webhook URL updated successfully.');
+    }
 }
