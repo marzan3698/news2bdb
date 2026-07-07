@@ -1123,12 +1123,13 @@ class NewsGeneratorService
 
             // Write Title on Red Banner
             if (!empty($title)) {
-                $fontPath = public_path('fonts/SutonnyMJ-Bold.ttf');
-                if (file_exists($fontPath)) {
+                $bengaliFontPath = public_path('fonts/SutonnyMJ-Bold.ttf');
+                $englishFontPath = public_path('fonts/HindSiliguri-Bold.ttf'); // Assuming this exists
+                
+                if (file_exists($bengaliFontPath)) {
                     $fontSize = 24;
                     $whiteColor = imagecolorallocate($canvas, 255, 255, 255);
                     
-                    // Translate Unicode title to Bijoy ANSI for correct Bengali rendering in GD
                     try {
                         $translator = new \ArNishan\BanglaConverter\Translate();
                         $bijoyTitle = $translator->unicodeToBijoy($title);
@@ -1137,19 +1138,73 @@ class NewsGeneratorService
                     }
 
                     // Wrap text to fit inside the banner (with some padding)
-                    $wrappedText = $this->wrapTtfText($fontSize, $fontPath, $bijoyTitle, $finalW - 40);
+                    // We use the Bijoy title for wrapping to get an approximation of the lines
+                    $wrappedText = $this->wrapTtfText($fontSize, $bengaliFontPath, $bijoyTitle, $finalW - 40);
+                    $lines = explode("\n", $wrappedText);
                     
-                    // Calculate text bounding box to center it vertically inside the banner
-                    $bbox = @imagettfbbox($fontSize, 0, $fontPath, $wrappedText);
-                    if ($bbox) {
-                        $textWidth = $bbox[2] - $bbox[0];
-                        $textHeight = $bbox[1] - $bbox[7];
+                    // We must determine the total text height to center it vertically
+                    $totalLines = count($lines);
+                    // Approximate line height (fontSize + some padding)
+                    $lineHeight = $fontSize * 1.6;
+                    $totalTextHeight = $totalLines * $lineHeight;
+                    
+                    $startY = $finalH + (int)(($bannerHeight - $totalTextHeight) / 2) + $fontSize;
+                    
+                    // Now process original title to avoid double conversion in the loop
+                    // But wait, the wrap string is already converted! We can't regex split the Bijoy string to find English letters because English letters in Bijoy ARE Bengali characters!
+                    // Oh! This is a critical realization. We MUST split the ORIGINAL title, then wrap it ourselves, OR just wrap the original title using the English font (close enough width) and then split the lines.
+                    
+                    $wrappedOriginalText = $this->wrapTtfText($fontSize, $englishFontPath, $title, $finalW - 40);
+                    $originalLines = explode("\n", $wrappedOriginalText);
+                    $totalLines = count($originalLines);
+                    $totalTextHeight = $totalLines * $lineHeight;
+                    $startY = $finalH + (int)(($bannerHeight - $totalTextHeight) / 2) + $fontSize;
+
+                    foreach ($originalLines as $line) {
+                        // Split line into English/Number tokens and Bengali/Symbol tokens
+                        // We capture words of A-Z, a-z, 0-9
+                        $tokens = preg_split('/([a-zA-Z0-9]+)/u', $line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
                         
-                        $x = (int)(($finalW - $textWidth) / 2);
-                        // Center vertically within the banner area
-                        $y = $finalH + (int)(($bannerHeight - $textHeight) / 2) + $fontSize; 
+                        // First pass to calculate line width for centering
+                        $lineWidth = 0;
+                        $tokenData = [];
+                        foreach ($tokens as $token) {
+                            if (preg_match('/^[a-zA-Z0-9]+$/', $token)) {
+                                $font = $englishFontPath;
+                                $text = $token;
+                            } else {
+                                $font = $bengaliFontPath;
+                                $text = $translator->unicodeToBijoy($token);
+                                
+                                // FIX MISSING GLYPHS in SutonnyMJ-Bold.ttf
+                                // "ল-ফলা" generated as ASCII 173 (­), change to 172 (¬)
+                                $text = str_replace(chr(173), chr(172), $text);
+                                // "রেফ" generated as ASCII 169 (©), change to 174 (®)
+                                $text = str_replace(chr(169), chr(174), $text);
+                            }
+                            
+                            $bbox = @imagettfbbox($fontSize, 0, $font, $text);
+                            $width = 0;
+                            if ($bbox) {
+                                $width = abs($bbox[2] - $bbox[0]);
+                            }
+                            
+                            $tokenData[] = [
+                                'font' => $font,
+                                'text' => $text,
+                                'width' => $width
+                            ];
+                            $lineWidth += $width;
+                        }
                         
-                        @imagettftext($canvas, $fontSize, 0, $x, $y, $whiteColor, $fontPath, $wrappedText);
+                        // Draw tokens horizontally centered
+                        $startX = (int)(($finalW - $lineWidth) / 2);
+                        foreach ($tokenData as $td) {
+                            @imagettftext($canvas, $fontSize, 0, $startX, $startY, $whiteColor, $td['font'], $td['text']);
+                            $startX += $td['width'];
+                        }
+                        
+                        $startY += $lineHeight;
                     }
                 }
             }
