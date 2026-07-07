@@ -12,6 +12,10 @@ Route::get('/news/{slug}', [HomeController::class, 'show'])->name('news.show');
 Route::get('/category/{slug}', [HomeController::class, 'category'])->name('news.category');
 Route::get('/location', [HomeController::class, 'location'])->name('news.location');
 
+// Legal Pages
+Route::view('/privacy-policy', 'pages.privacy')->name('privacy');
+Route::view('/terms-of-service', 'pages.terms')->name('terms');
+
 // n8n Webhook API Route (Exempt from CSRF in bootstrap/app.php)
 Route::post('/api/n8n/generate', [\App\Http\Controllers\Api\N8nController::class, 'generate']);
 
