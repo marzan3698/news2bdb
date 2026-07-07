@@ -1119,19 +1119,24 @@ class NewsGeneratorService
             }
 
             // Banner configuration
-            $bannerHeight = 120; // Fixed red space height at the bottom
-            $totalHeight = $finalH + $bannerHeight;
+            $overlayHeight = (int)($finalH * 0.40);
+            $overlayStartY = $finalH - $overlayHeight;
 
-            $canvas = imagecreatetruecolor($finalW, $totalHeight);
+            $canvas = imagecreatetruecolor($finalW, $finalH);
             imagealphablending($canvas, true);
             imagesavealpha($canvas, true);
 
-            // Background color for banner (Dark Red matching the example)
-            $redColor = imagecolorallocate($canvas, 153, 0, 0); 
-            imagefill($canvas, 0, 0, $redColor);
-
-            // Copy the resized image to the top of the canvas
+            // Copy the resized image to the full canvas
             imagecopyresampled($canvas, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
+
+            // Draw Dark Red Gradient Overlay on the bottom 40%
+            for ($y = $overlayStartY; $y < $finalH; $y++) {
+                $progress = ($y - $overlayStartY) / $overlayHeight;
+                // Fade from transparent (127) to opaque dark red (0)
+                $alpha = (int)(127 * (1 - pow($progress, 0.7))); 
+                $color = imagecolorallocatealpha($canvas, 130, 0, 0, $alpha);
+                imageline($canvas, 0, $y, $finalW, $y, $color);
+            }
 
             // Top-left logo overlay (Only one logo now)
             $logoPath = Setting::where('key', 'site_logo')->value('value');
@@ -1172,8 +1177,9 @@ class NewsGeneratorService
                 $englishFontPath = public_path('fonts/HindSiliguri-Bold.ttf'); // Assuming this exists
                 
                 if (file_exists($bengaliFontPath)) {
-                    $fontSize = 24;
+                    $fontSize = 32; // Larger text
                     $whiteColor = imagecolorallocate($canvas, 255, 255, 255);
+                    $yellowColor = imagecolorallocate($canvas, 255, 204, 0); // Website link color
                     
                     try {
                         $translator = new \ArNishan\BanglaConverter\Translate();
@@ -1183,27 +1189,16 @@ class NewsGeneratorService
                     }
 
                     // Wrap text to fit inside the banner (with some padding)
-                    // We use the Bijoy title for wrapping to get an approximation of the lines
-                    $wrappedText = $this->wrapTtfText($fontSize, $bengaliFontPath, $bijoyTitle, $finalW - 40);
-                    $lines = explode("\n", $wrappedText);
-                    
-                    // We must determine the total text height to center it vertically
-                    $totalLines = count($lines);
-                    // Approximate line height (fontSize + some padding)
-                    $lineHeight = $fontSize * 1.6;
-                    $totalTextHeight = $totalLines * $lineHeight;
-                    
-                    $startY = $finalH + (int)(($bannerHeight - $totalTextHeight) / 2) + $fontSize;
-                    
-                    // Now process original title to avoid double conversion in the loop
-                    // But wait, the wrap string is already converted! We can't regex split the Bijoy string to find English letters because English letters in Bijoy ARE Bengali characters!
-                    // Oh! This is a critical realization. We MUST split the ORIGINAL title, then wrap it ourselves, OR just wrap the original title using the English font (close enough width) and then split the lines.
-                    
                     $wrappedOriginalText = $this->wrapTtfText($fontSize, $englishFontPath, $title, $finalW - 40);
                     $originalLines = explode("\n", $wrappedOriginalText);
                     $totalLines = count($originalLines);
+                    
+                    $lineHeight = $fontSize * 1.6;
                     $totalTextHeight = $totalLines * $lineHeight;
-                    $startY = $finalH + (int)(($bannerHeight - $totalTextHeight) / 2) + $fontSize;
+                    
+                    // Center the text in the top part of the overlay, leaving space for the website link
+                    $titleAreaHeight = $overlayHeight - 40; 
+                    $startY = $overlayStartY + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize;
 
                     foreach ($originalLines as $line) {
                         // Split line into English/Number tokens and Bengali/Symbol tokens
@@ -1224,8 +1219,7 @@ class NewsGeneratorService
                                 // FIX MISSING GLYPHS in SutonnyMJ-Bold.ttf
                                 // "ল-ফলা" generated as ASCII 173 (­), change to 172 (¬)
                                 $text = str_replace(chr(173), chr(172), $text);
-                                // "রেফ" generated as ASCII 169 (©), change to 174 (®)
-                                $text = str_replace(chr(169), chr(174), $text);
+                                // Removed the "রেফ" replacement to fix Reph rendering issues
                             }
                             
                             $bbox = @imagettfbbox($fontSize, 0, $font, $text);
@@ -1251,6 +1245,15 @@ class NewsGeneratorService
                         
                         $startY += $lineHeight;
                     }
+                    
+                    // Add Website URL at the very bottom of the image
+                    $websiteText = "www.bdbnews.com";
+                    $websiteFontSize = 14;
+                    $websiteBox = @imagettfbbox($websiteFontSize, 0, $englishFontPath, $websiteText);
+                    $websiteWidth = $websiteBox ? abs($websiteBox[2] - $websiteBox[0]) : 150;
+                    $websiteX = (int)(($finalW - $websiteWidth) / 2);
+                    $websiteY = $finalH - 15; // 15px from bottom
+                    @imagettftext($canvas, $websiteFontSize, 0, $websiteX, $websiteY, $yellowColor, $englishFontPath, $websiteText);
                 }
             }
 
