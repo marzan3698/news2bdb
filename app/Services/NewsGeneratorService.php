@@ -1121,33 +1121,47 @@ class NewsGeneratorService
             // Banner configuration
             $bannerHeight = (int)($finalH * 0.40);
             $totalHeight = $finalH + $bannerHeight;
+            $curveHeight = 35; // Curve goes up into the image by this many pixels
 
             $canvas = imagecreatetruecolor($finalW, $totalHeight);
             imagealphablending($canvas, true);
             imagesavealpha($canvas, true);
 
-            // Background gradient for banner (Dark Red to darker red/black)
-            for ($y = $finalH; $y < $totalHeight; $y++) {
-                $progress = ($y - $finalH) / $bannerHeight; // 0.0 to 1.0
-                $r = (int)(180 - (100 * $progress)); // 180 down to 80
-                $color = imagecolorallocate($canvas, $r, 0, 0);
-                imageline($canvas, 0, $y, $finalW, $y, $color);
-            }
-
-            // Top border for the banner
-            $topBorderColor = imagecolorallocate($canvas, 255, 100, 100); // Lighter red/pinkish border
-            imageline($canvas, 0, $finalH, $finalW, $finalH, $topBorderColor);
-            imageline($canvas, 0, $finalH + 1, $finalW, $finalH + 1, $topBorderColor);
-
-            // Light shade (drop shadow) just below the border
-            for ($i = 0; $i < 6; $i++) {
-                $shadowAlpha = 90 + ($i * 6); // Fading out shadow
-                $shadowColor = imagecolorallocatealpha($canvas, 0, 0, 0, $shadowAlpha);
-                imageline($canvas, 0, $finalH + 2 + $i, $finalW, $finalH + 2 + $i, $shadowColor);
-            }
-
             // Copy the resized image to the top of the canvas
             imagecopyresampled($canvas, $gdImg, 0, 0, $cx, $cy, $finalW, $finalH, $cw, $ch);
+
+            // Modern Curved Banner Design (overlapping the bottom of the image)
+            for ($x = 0; $x < $finalW; $x++) {
+                $normalizedX = ($x / $finalW) * 2 - 1; // -1 to 1 (left to right)
+                // Parabola: peaks at center (x=0) with height curveHeight
+                $curveY = $finalH - (int)($curveHeight * (1 - ($normalizedX * $normalizedX)));
+                
+                // Draw vertical line for gradient
+                for ($y = $curveY; $y < $totalHeight; $y++) {
+                    $progress = ($y - $curveY) / ($totalHeight - $curveY);
+                    
+                    // Gradient: Rich Dark Red to Very Dark Red/Black
+                    $r = (int)(180 - (140 * $progress));
+                    $g = (int)(15 - (15 * $progress));
+                    $b = (int)(20 - (20 * $progress));
+                    
+                    $color = imagecolorallocate($canvas, $r, $g, $b);
+                    imagesetpixel($canvas, $x, $y, $color);
+                }
+                
+                // Draw the curved border (Gold/Yellow for modern premium look)
+                $borderColor = imagecolorallocate($canvas, 255, 204, 0);
+                $shadowColor = imagecolorallocatealpha($canvas, 0, 0, 0, 70); // Shadow below border
+                
+                // 2px thick border
+                imagesetpixel($canvas, $x, $curveY, $borderColor);
+                imagesetpixel($canvas, $x, $curveY + 1, $borderColor);
+                
+                // 2px shadow
+                imagesetpixel($canvas, $x, $curveY + 2, $shadowColor);
+                imagesetpixel($canvas, $x, $curveY + 3, $shadowColor);
+            }
+
 
             // Top-left logo overlay (Only one logo now)
             $logoPath = Setting::where('key', 'site_logo')->value('value');
@@ -1187,6 +1201,15 @@ class NewsGeneratorService
                 $bengaliFontPath = public_path('fonts/SutonnyMJ-Bold.ttf');
                 $englishFontPath = public_path('fonts/HindSiliguri-Bold.ttf'); // Assuming this exists
                 
+                // Pre-process title to remove invisible characters (ZWNJ, ZWJ) which cause boxes
+                $title = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $title);
+                // Fix decomposed nukta characters which converter might miss
+                $title = str_replace(
+                    ["য\u{09BC}", "ড\u{09BC}", "ঢ\u{09BC}"],
+                    ["য়", "ড়", "ঢ়"],
+                    $title
+                );
+                
                 if (file_exists($bengaliFontPath)) {
                     $fontSize = 28; // Smaller text to prevent overflow
                     $whiteColor = imagecolorallocate($canvas, 255, 255, 255);
@@ -1209,11 +1232,12 @@ class NewsGeneratorService
                     $totalTextHeight = $totalLines * $lineHeight;
                     
                     // Center the text in the top part of the banner, leaving space for the website link
+                    // Taking into account the curve, we can push it down slightly
                     $titleAreaHeight = $bannerHeight - 40; 
                     
                     // Calculate starting Y and ensure it doesn't overflow above the banner
-                    $calculatedStartY = $finalH + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize;
-                    $minStartY = $finalH + $fontSize + 15; // At least 15px below the border
+                    $calculatedStartY = $finalH + (int)(($titleAreaHeight - $totalTextHeight) / 2) + $fontSize - 5;
+                    $minStartY = $finalH + $fontSize; 
                     $startY = max($minStartY, $calculatedStartY);
 
                     foreach ($originalLines as $line) {
