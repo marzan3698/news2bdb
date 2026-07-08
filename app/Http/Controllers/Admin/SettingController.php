@@ -238,6 +238,7 @@ class SettingController extends Controller
         "method": "POST",
         "url": "={{ $json.body.callback_url }}",
         "sendBody": true,
+        "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
             { "name": "video_news_id", "value": "={{ $json.body.video_news_id }}" },
