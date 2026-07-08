@@ -46,7 +46,14 @@ class SourceToNewsController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
             
-        return view('admin.source-to-news.snews', compact('articles'));
+        $jagoStatus = \App\Models\Setting::where('key', 'jago1_source_status')->value('value') ?? '1';
+        $prothomStatus = \App\Models\Setting::where('key', 'prothom1_source_status')->value('value') ?? '1';
+
+        $activeSources = [];
+        if ($jagoStatus == '1') $activeSources[] = 'jago 1';
+        if ($prothomStatus == '1') $activeSources[] = 'prothom 1';
+            
+        return view('admin.source-to-news.snews', compact('articles', 'activeSources'));
     }
 
     /**

@@ -69,23 +69,73 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
+    const activeSources = @json($activeSources);
+
     $('#add-new-news-btn').on('click', function() {
+        if (activeSources.length === 0) {
+            Swal.fire('No Active Sources', 'Please enable at least one source from the All Source List.', 'error');
+            return;
+        }
+
+        let sourcesHtml = '<strong>Active Sources:</strong> ' + activeSources.join(', ');
+
         Swal.fire({
             title: 'Clone from Fixed Sources',
-            input: 'number',
-            inputLabel: 'Number of news to clone (e.g. 2 or 8)',
-            inputValue: 2,
-            inputAttributes: {
-                min: 1,
-                max: 20,
-                step: 1
-            },
+            html: `
+                <div class="mb-3 text-left" style="font-size: 14px;">
+                    ${sourcesHtml}
+                </div>
+                <div class="d-flex justify-content-center flex-wrap mb-3">
+                    <button type="button" class="btn btn-outline-primary clone-num-btn m-1" data-num="2">2 News</button>
+                    <button type="button" class="btn btn-outline-primary clone-num-btn m-1" data-num="5">5 News</button>
+                    <button type="button" class="btn btn-outline-primary clone-num-btn m-1" data-num="10">10 News</button>
+                    <button type="button" class="btn btn-outline-primary clone-num-btn m-1" data-num="30">30 News</button>
+                </div>
+                <div class="form-group text-left">
+                    <label>Or enter manual amount:</label>
+                    <input type="number" id="clone-manual-num" class="form-control" min="1" max="100" placeholder="e.g. 8">
+                </div>
+                <div id="clone-distribution-info" class="text-info text-left mt-2" style="font-size: 13.5px; min-height: 20px;"></div>
+            `,
             showCancelButton: true,
             confirmButtonText: 'Start Cloning',
             showLoaderOnConfirm: true,
-            preConfirm: (num) => {
+            didOpen: () => {
+                const updateDistribution = (num) => {
+                    if (!num || num <= 0) {
+                        $('#clone-distribution-info').text('');
+                        return;
+                    }
+                    if (activeSources.length === 1) {
+                        $('#clone-distribution-info').html(`Will fetch <strong>${num}</strong> news from <strong>${activeSources[0]}</strong>.`);
+                    } else if (activeSources.length === 2) {
+                        let p = Math.ceil(num / 2); // prothom is first in controller logic
+                        let j = Math.floor(num / 2);
+                        $('#clone-distribution-info').html(`Will fetch <strong>${p}</strong> from <strong>prothom 1</strong>, and <strong>${j}</strong> from <strong>jago 1</strong>.`);
+                    }
+                };
+
+                $('.clone-num-btn').on('click', function() {
+                    $('.clone-num-btn').removeClass('active');
+                    $(this).addClass('active');
+                    let num = $(this).data('num');
+                    $('#clone-manual-num').val(num);
+                    updateDistribution(num);
+                });
+
+                $('#clone-manual-num').on('input', function() {
+                    $('.clone-num-btn').removeClass('active');
+                    let num = parseInt($(this).val());
+                    updateDistribution(num);
+                });
+
+                // Set default to 2
+                $('.clone-num-btn[data-num="2"]').click();
+            },
+            preConfirm: () => {
+                const num = parseInt($('#clone-manual-num').val());
                 if (!num || num <= 0) {
-                    Swal.showValidationMessage('Please enter a valid number');
+                    Swal.showValidationMessage('Please select or enter a valid number');
                     return false;
                 }
                 
