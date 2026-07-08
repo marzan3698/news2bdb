@@ -72,9 +72,9 @@
                     
                     <li><strong>1. Webhook (Trigger):</strong> এই নোডে ডাবল-ক্লিক করে এর <strong>Test URL</strong> অথবা <strong>Production URL</strong> টি কপি করে এই পেজের উপরের "n8n Video Webhook URL" বক্সে দিয়ে <span class="badge badge-primary">Save Settings</span> এ ক্লিক করুন। লারাভেল এখান থেকেই ক্যাটাগরি ডেটা পাঠাবে।</li>
                     
-                    <li><strong>2. Write Script (Gemini):</strong> এই নোডটি লারাভেল থেকে পাওয়া ক্যাটাগরি (যেমন: Sports) অনুযায়ী বাংলায় ৩০ সেকেন্ডের একটি আকর্ষণীয় সায়েন্টিফিক স্ক্রিপ্ট লিখবে। আপনার যদি Gemini API Key সেভ করা না থাকে, তাহলে Credentials থেকে যুক্ত করে নেবেন।</li>
+                    <li><strong>2. Write Script (OpenAI):</strong> এই নোডটি লারাভেল থেকে পাওয়া ক্যাটাগরি (যেমন: Sports) অনুযায়ী বাংলায় ৩০ সেকেন্ডের একটি আকর্ষণীয় সায়েন্টিফিক স্ক্রিপ্ট লিখবে। আপনার যদি OpenAI API Key সেভ করা না থাকে, তাহলে Credentials থেকে যুক্ত করে নেবেন। (আপনার যদি OpenAI এর বদলে Gemini ব্যবহার করতে ইচ্ছে হয়, তাহলে এই নোডটি ডিলিট করে Gemini নোড যুক্ত করে নিতে পারেন)।</li>
 
-                    <li><strong>3. Generate Voiceover (ElevenLabs / TTS):</strong> এই নোডটি Gemini থেকে পাওয়া টেক্সটকে অডিওতে রূপান্তর করবে। JSON এ আমরা ElevenLabs এর ডেমো দিয়েছি, আপনি চাইলে Google TTS বা OpenAI এর TTS ব্যবহার করতে পারেন। নোডটিতে আপনার API Key বসিয়ে নেবেন।</li>
+                    <li><strong>3. Generate Voiceover (ElevenLabs / TTS):</strong> এই নোডটি OpenAI থেকে পাওয়া টেক্সটকে অডিওতে রূপান্তর করবে। JSON এ আমরা ElevenLabs এর ডেমো দিয়েছি, আপনি চাইলে Google TTS বা OpenAI এর TTS ব্যবহার করতে পারেন। নোডটিতে আপনার API Key বসিয়ে নেবেন।</li>
 
                     <li><strong>4. Create Video (Your API):</strong> এই নোডটি আপনার পছন্দের Video Generation API (যেমন: HeyGen, D-ID, Runway) এ রিকোয়েস্ট পাঠিয়ে অডিও এবং ছবি থেকে ভিডিও তৈরি করবে। এই নোডটিতে আপনার ভিডিও সার্ভিসের URL এবং API Key বসিয়ে নেবেন।</li>
                     

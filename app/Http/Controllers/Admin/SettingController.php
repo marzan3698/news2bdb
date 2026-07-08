@@ -235,7 +235,8 @@ class SettingController extends Controller
     {
       "parameters": {
         "resource": "chat",
-        "model": "gemini-1.5-pro-latest",
+        "operation": "create",
+        "model": "gpt-4o-mini",
         "messages": {
           "message": [
             {
@@ -245,9 +246,9 @@ class SettingController extends Controller
           ]
         }
       },
-      "id": "gemini",
-      "name": "Write Script (Gemini)",
-      "type": "n8n-nodes-base.googleGemini",
+      "id": "openai-script",
+      "name": "Write Script (OpenAI)",
+      "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [250, 300]
     },
@@ -294,7 +295,7 @@ class SettingController extends Controller
         "pageId": "YOUR_PAGE_ID",
         "edge": "videos",
         "options": {
-          "description": "={{ $(\'Write Script (Gemini)\').item.json.message.content }}"
+          "description": "={{ $(\'Write Script (OpenAI)\').item.json.message.content }}"
         }
       },
       "id": "facebook",
@@ -329,10 +330,10 @@ class SettingController extends Controller
   "connections": {
     "Webhook (From Laravel)": {
       "main": [
-        [ { "node": "Write Script (Gemini)", "type": "main", "index": 0 } ]
+        [ { "node": "Write Script (OpenAI)", "type": "main", "index": 0 } ]
       ]
     },
-    "Write Script (Gemini)": {
+    "Write Script (OpenAI)": {
       "main": [
         [ { "node": "Generate Voiceover (ElevenLabs)", "type": "main", "index": 0 } ]
       ]
