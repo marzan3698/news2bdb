@@ -64,7 +64,8 @@
                     <h4 class="mt-0 header-title mb-4 text-dark"><i class="fas fa-terminal mr-2"></i>cPanel Cron Job Setup</h4>
                     <p class="text-muted">
                         To make this work automatically, you must set up a Cron Job in your cPanel. <br>
-                        Copy the exact command below and paste it into the <strong>Command</strong> field in your cPanel Cron Jobs section. Set the time interval to match your settings.
+                        1. In cPanel, under <strong>Common Settings</strong>, select the time interval (e.g. <i>Once Per Ten Minutes</i>).<br>
+                        2. Copy the exact command below and paste it into the <strong>Command</strong> field.
                     </p>
                     
                     <div class="form-group">
@@ -94,15 +95,16 @@
         let interval = $('#snews_schedule_interval').val();
         if(!interval || interval < 1) interval = 10;
         
-        // Ensure interval is formatted for standard cron
+        // Ensure interval is formatted for standard cron (kept for reference, but removed from command box)
         let cronTime = `*/${interval} * * * *`;
         if (interval >= 60) {
             let hours = Math.floor(interval / 60);
-            cronTime = `0 */${hours} * * *`; // approximate if hours
+            cronTime = `0 */${hours} * * *`;
         }
         
         let url = `${baseUrl}/cron/snews?key=${cronSecret}`;
-        let command = `${cronTime} /usr/bin/wget -q -O - "${url}" >/dev/null 2>&1`;
+        // cPanel only needs the command part in the Command field
+        let command = `/usr/bin/wget -q -O - "${url}" >/dev/null 2>&1`;
         
         $('#cron_command').val(command);
     }
