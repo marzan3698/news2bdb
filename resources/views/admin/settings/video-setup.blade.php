@@ -59,6 +59,41 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light border-info">
+            <div class="card-body">
+                <h4 class="mt-0 header-title text-info"><i class="mdi mdi-information-outline"></i> n8n এ Video News সেটআপ করার সম্পূর্ণ গাইডলাইন</h4>
+                <p class="text-muted mb-4">নিচের ধাপগুলো অনুসরণ করে আপনি সহজেই আপনার n8n ওয়ার্কফ্লো সেটআপ করতে পারবেন:</p>
+                
+                <ol class="font-14" style="line-height: 1.8;">
+                    <li><strong>ওয়ার্কফ্লো তৈরি:</strong> প্রথমে উপরে দেওয়া <span class="badge badge-success">Copy JSON</span> বাটনে ক্লিক করে JSON কোডটি কপি করুন। এরপর আপনার <a href="https://n8n.io/" target="_blank" class="text-primary font-weight-bold">n8n.io</a> ড্যাশবোর্ডে গিয়ে একটি নতুন ওয়ার্কফ্লো তৈরি করুন এবং ক্যানভাসের উপর মাউস রেখে <code>Ctrl+V</code> (বা <code>Cmd+V</code>) চেপে কোডটি পেস্ট করুন।</li>
+                    
+                    <li><strong>Webhook URL সেভ করা:</strong> পেস্ট করার পর আপনি "Webhook (From Laravel)" নামে একটি নোড দেখতে পাবেন। সেটিতে ডাবল-ক্লিক করে ওপেন করুন এবং এর <strong>Test URL</strong> অথবা <strong>Production URL</strong> টি কপি করে এই পেজের উপরের "n8n Video Webhook URL" বক্সে দিয়ে <span class="badge badge-primary">Save Settings</span> এ ক্লিক করুন।</li>
+                    
+                    <li><strong>ভিডিও জেনারেট করা:</strong> n8n এ আপনার ওয়েববুক নোডের পর, আপনাকে অন্যান্য নোডগুলো (যেমন: Gemini/ChatGPT নোড স্ক্রিপ্ট লেখার জন্য, Text-to-Speech নোড ভয়েসওভারের জন্য, এবং Video Generation API/Node) বসাতে হবে। <br>
+                    লারাভেল থেকে আপনি ক্যাটাগরি পেয়ে যাবেন (যেমন: Sports), সেটি দিয়ে আপনি Gemini কে প্রম্পট দিতে পারেন: <em>"Generate a 30-second explanation video script about the physics of football in Bengali."</em></li>
+                    
+                    <li><strong>ফেসবুকে ভিডিও আপলোড:</strong> ভিডিও জেনারেট হয়ে গেলে, n8n এর Facebook Graph API নোড ব্যবহার করে আপনার ফেসবুক পেজে ভিডিওটি আপলোড করুন। আপলোড শেষে আপনি ফেসবুক থেকে একটি ভিডিও আইডি বা লিংক পাবেন। </li>
+                    
+                    <li><strong>লারাভেলে ডাটা ফেরত পাঠানো:</strong> ওয়ার্কফ্লো এর একদম শেষে "Send Data Back to Laravel" নামের HTTP Request নোডটি ব্যবহার করুন। এই নোডে লারাভেলকে জানাতে হবে যে ভিডিওটি তৈরি হয়ে গেছে।<br>
+                    এই নোডের Body Parameters এর ভেতরে আপনাকে ৩টি জিনিস ডাইনামিকভাবে সেট করে দিতে হবে:
+                        <ul>
+                            <li><code>concept_title</code>: (যেমন: "ফুটবলের ফিজিক্স")</li>
+                            <li><code>facebook_video_url</code>: (আপনার ফেসবুক পেজে আপলোড হওয়া ভিডিওর লিংক বা এমবেড লিংক)</li>
+                            <li><code>banner_image_url</code>: (নিউজ আর্টিকেলের জন্য একটি থাম্বনেইল ইমেজের লিংক)</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="alert alert-warning mt-3 mb-0">
+                    <strong>গুরুত্বপূর্ণ:</strong> n8n এর Webhook নোডটি সবসময় Active বা "Listen for Test Event" মোডে থাকতে হবে। তা না হলে "Post Video" পেজ থেকে জেনারেট রিকোয়েস্ট দিলে তা কাজ করবে না।
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
