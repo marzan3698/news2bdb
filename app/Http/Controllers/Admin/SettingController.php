@@ -215,8 +215,7 @@ class SettingController extends Controller
         // Generate the callback URL to display to the user
         $callback_url = url('/api/n8n/video-callback');
 
-        // A template n8n JSON for the user to copy
-        // This is a basic skeleton showing webhook in and webhook out
+        // A complete n8n JSON for the user to copy
         $n8n_template_json = '{
   "nodes": [
     {
@@ -230,21 +229,92 @@ class SettingController extends Controller
       "name": "Webhook (From Laravel)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [ 200, 300 ],
+      "position": [0, 300],
       "webhookId": "custom-video-webhook-id"
     },
     {
       "parameters": {
+        "resource": "chat",
+        "model": "gemini-1.5-pro-latest",
+        "messages": {
+          "message": [
+            {
+              "role": "user",
+              "content": "={{ \'Write a short, engaging 30-second scientific explanation script in Bengali about \' + $json.body.category + \'. Output ONLY the Bengali text, no english.\' }}"
+            }
+          ]
+        }
+      },
+      "id": "gemini",
+      "name": "Write Script (Gemini)",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
         "method": "POST",
-        "url": "={{ $json.body.callback_url }}",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "xi-api-key", "value": "YOUR_API_KEY" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"text\": \"{{ $json.message.content }}\", \"model_id\": \"eleven_multilingual_v2\" }",
+        "options": {}
+      },
+      "id": "tts",
+      "name": "Generate Voiceover (ElevenLabs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.your-video-generator.com/render",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"audio_url\": \"your_audio\", \"image_url\": \"your_image\" }",
+        "options": {}
+      },
+      "id": "video-gen",
+      "name": "Create Video (Your API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "node": "page",
+        "pageId": "YOUR_PAGE_ID",
+        "edge": "videos",
+        "options": {
+          "description": "={{ $(\'Write Script (Gemini)\').item.json.message.content }}"
+        }
+      },
+      "id": "facebook",
+      "name": "Upload to Facebook",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $(\'Webhook (From Laravel)\').item.json.body.callback_url }}",
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            { "name": "video_news_id", "value": "={{ $json.body.video_news_id }}" },
-            { "name": "concept_title", "value": "Physics of Football (Auto)" },
-            { "name": "facebook_video_url", "value": "https://www.facebook.com/watch/?v=123456789" },
-            { "name": "banner_image_url", "value": "https://image.pollinations.ai/prompt/football" }
+            { "name": "video_news_id", "value": "={{ $(\'Webhook (From Laravel)\').item.json.body.video_news_id }}" },
+            { "name": "concept_title", "value": "={{ $(\'Webhook (From Laravel)\').item.json.body.category }} Science Explained" },
+            { "name": "facebook_video_url", "value": "={{ $json.id ? \'https://www.facebook.com/watch/?v=\' + $json.id : \'\' }}" },
+            { "name": "banner_image_url", "value": "https://image.pollinations.ai/prompt/{{ $(\'Webhook (From Laravel)\').item.json.body.category }}" }
           ]
         },
         "options": {}
@@ -253,11 +323,31 @@ class SettingController extends Controller
       "name": "Send Data Back to Laravel",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 800, 300 ]
+      "position": [1250, 300]
     }
   ],
   "connections": {
     "Webhook (From Laravel)": {
+      "main": [
+        [ { "node": "Write Script (Gemini)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Write Script (Gemini)": {
+      "main": [
+        [ { "node": "Generate Voiceover (ElevenLabs)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Generate Voiceover (ElevenLabs)": {
+      "main": [
+        [ { "node": "Create Video (Your API)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Create Video (Your API)": {
+      "main": [
+        [ { "node": "Upload to Facebook", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Upload to Facebook": {
       "main": [
         [ { "node": "Send Data Back to Laravel", "type": "main", "index": 0 } ]
       ]
