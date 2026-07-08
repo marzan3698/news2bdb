@@ -50,6 +50,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings/n8n-facebook', [SettingController::class, 'n8nFacebook'])->name('settings.n8n-facebook');
     Route::post('/settings/n8n-facebook', [SettingController::class, 'saveN8nFacebook'])->name('settings.n8n-facebook.save');
     
+    // AI Video Setup
+    Route::get('/settings/video-setup', [SettingController::class, 'videoSetup'])->name('settings.video-setup');
+    Route::post('/settings/video-setup', [SettingController::class, 'saveVideoSetup'])->name('settings.video-setup.save');
+    
     // AI Sources CRUD
     Route::resource('/settings/ai-sources', App\Http\Controllers\Admin\AiSourceController::class)->names('ai-sources');
     
