@@ -18,6 +18,7 @@ Route::get('/terms-of-service', [HomeController::class, 'terms'])->name('terms')
 
 // n8n Webhook API Route (Exempt from CSRF in bootstrap/app.php)
 Route::post('/api/n8n/generate', [\App\Http\Controllers\Api\N8nController::class, 'generate']);
+Route::post('/api/n8n/video-callback', [\App\Http\Controllers\Admin\VideoNewsController::class, 'callback']);
 
 // Cron Job API Route for Snews Auto Clone
 Route::get('/cron/snews', [\App\Http\Controllers\CronController::class, 'snews'])->name('cron.snews');
@@ -70,6 +71,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/schedule', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'saveSchedule'])->name('schedule.save');
         Route::post('/clone/fetch', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'fetchRssNews'])->name('clone.fetch');
         Route::post('/clone/process', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'processNewsItem'])->name('clone.process');
+    });
+
+    // AI Video News
+    Route::prefix('video-news')->name('video-news.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\VideoNewsController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\VideoNewsController::class, 'create'])->name('create');
+        Route::post('/trigger', [\App\Http\Controllers\Admin\VideoNewsController::class, 'trigger'])->name('trigger');
     });
 });
 

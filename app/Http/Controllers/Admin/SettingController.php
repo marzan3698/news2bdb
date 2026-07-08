@@ -207,4 +207,74 @@ class SettingController extends Controller
 
         return redirect()->back()->with('success', 'n8n Facebook Webhook URL updated successfully.');
     }
+
+    public function videoSetup()
+    {
+        $n8n_video_webhook_url = Setting::where('key', 'n8n_video_webhook_url')->value('value');
+        
+        // Generate the callback URL to display to the user
+        $callback_url = url('/api/n8n/video-callback');
+
+        // A template n8n JSON for the user to copy
+        // This is a basic skeleton showing webhook in and webhook out
+        $n8n_template_json = '{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "video-generate",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (From Laravel)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [ 200, 300 ],
+      "webhookId": "custom-video-webhook-id"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.body.callback_url }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "video_news_id", "value": "={{ $json.body.video_news_id }}" },
+            { "name": "concept_title", "value": "Physics of Football (Auto)" },
+            { "name": "facebook_video_url", "value": "https://www.facebook.com/watch/?v=123456789" },
+            { "name": "banner_image_url", "value": "https://image.pollinations.ai/prompt/football" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Send Data Back to Laravel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 800, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook (From Laravel)": {
+      "main": [
+        [ { "node": "Send Data Back to Laravel", "type": "main", "index": 0 } ]
+      ]
+    }
+  }
+}';
+
+        return view('admin.settings.video-setup', compact('n8n_video_webhook_url', 'callback_url', 'n8n_template_json'));
+    }
+
+    public function saveVideoSetup(Request $request)
+    {
+        $request->validate([
+            'n8n_video_webhook_url' => 'nullable|url',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'n8n_video_webhook_url'], ['value' => $request->n8n_video_webhook_url]);
+
+        return redirect()->back()->with('success', 'AI Video Setup updated successfully.');
+    }
 }

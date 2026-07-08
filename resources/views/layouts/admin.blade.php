@@ -212,6 +212,17 @@
                                 <li><a href="{{ route('admin.source-to-news.schedule') }}">Schedule Snews</a></li>
                             </ul>
                         </li>
+                        <!-- AI Video News -->
+                        <li>
+                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                <i class="mdi mdi-video-vintage"></i>
+                                <span>Video news</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="{{ route('admin.video-news.create') }}">Post video</a></li>
+                                <li><a href="{{ route('admin.video-news.index') }}">All video list</a></li>
+                            </ul>
+                        </li>
                         <li>
                             <a href="javascript: void(0);"><i class="mdi mdi-clipboard-outline"></i><span>Users Database</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
                             <ul class="nav-second-level" aria-expanded="false">
@@ -231,9 +242,9 @@
                                 <li><a href="{{ route('admin.settings.general') }}">General Settings</a></li>
                                 <li><a href="{{ route('admin.settings.ai') }}">AI Integration</a></li>
                                 <li><a href="{{ route('admin.settings.n8n') }}">n8n Setup</a></li>
+                                <li><a href="{{ route('admin.settings.video-setup') }}">AI video setup</a></li>
                                 <li><a href="{{ route('admin.ai-sources.index') }}">AI Sources</a></li>
                             </ul>
-                        </li>
                         </li>
                         <li class="mt-3 px-3">
                             <a href="{{ route('admin.settings.n8n-facebook') }}" style="background: linear-gradient(135deg, #1877F2 0%, #0e5a1b 100%); color: white; border-radius: 8px; padding: 12px 15px; font-weight: bold; text-align: center; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(24, 119, 242, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
