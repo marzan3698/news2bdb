@@ -36,12 +36,12 @@
                         <label for="category">Select Video Category</label>
                         <select name="category" id="category" class="form-control" required>
                             <option value="">-- Choose Category --</option>
-                            <option value="Sports">Sports (????????)</option>
-                            <option value="Politics">Politics (???????)</option>
-                            <option value="Science">Science (??????? ? ?????????)</option>
-                            <option value="History">History (??????)</option>
-                            <option value="Entertainment">Entertainment (??????)</option>
-                            <option value="Business">Business (??????-???????)</option>
+                            <option value="Sports">Sports (স্পোর্টস)</option>
+                            <option value="Politics">Politics (রাজনীতি)</option>
+                            <option value="Science">Science (বিজ্ঞান ও প্রযুক্তি)</option>
+                            <option value="History">History (ইতিহাস)</option>
+                            <option value="Entertainment">Entertainment (বিনোদন)</option>
+                            <option value="Business">Business (ব্যবসা-বাণিজ্য)</option>
                         </select>
                         <small class="form-text text-muted">The AI will generate an explanation or scientific video based on this category (e.g. Physics of Football for Sports).</small>
                     </div>
@@ -58,8 +58,8 @@
 
 @push('js')
 <script>
-    form.on('submit', function() {
-        let btn = #generateBtn;
+    $('form').on('submit', function() {
+        let btn = $('#generateBtn');
         btn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Sending to n8n...');
         btn.prop('disabled', true);
     });

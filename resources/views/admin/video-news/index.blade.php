@@ -38,36 +38,36 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse( as )
+                            @forelse($videos as $video)
                                 <tr>
-                                    <td>{{ ->iteration }}</td>
-                                    <td><span class="badge badge-soft-primary">{{ ->category }}</span></td>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td><span class="badge badge-soft-primary">{{ $video->category }}</span></td>
                                     <td>
-                                        @if(->concept_title)
-                                            <strong>{{ ->concept_title }}</strong>
+                                        @if($video->concept_title)
+                                            <strong>{{ $video->concept_title }}</strong>
                                         @else
                                             <span class="text-muted"><i class="mdi mdi-loading mdi-spin"></i> Waiting for n8n...</span>
                                         @endif
                                     </td>
                                     <td>
-                                        @if(->status == 'completed')
+                                        @if($video->status == 'completed')
                                             <span class="badge badge-success">Completed</span>
-                                        @elseif(->status == 'processing')
+                                        @elseif($video->status == 'processing')
                                             <span class="badge badge-warning"><i class="mdi mdi-loading mdi-spin"></i> Processing</span>
                                         @else
                                             <span class="badge badge-danger">Failed</span>
                                         @endif
                                     </td>
                                     <td>
-                                        @if(->facebook_video_url)
-                                            <a href="{{ ->facebook_video_url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                        @if($video->facebook_video_url)
+                                            <a href="{{ $video->facebook_video_url }}" target="_blank" class="btn btn-sm btn-outline-info">
                                                 <i class="mdi mdi-facebook"></i> View on FB
                                             </a>
                                         @else
                                             <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
-                                    <td>{{ ->created_at->format('d M, Y h:i A') }}</td>
+                                    <td>{{ $video->created_at->format('d M, Y h:i A') }}</td>
                                 </tr>
                             @empty
                                 <tr>

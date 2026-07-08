@@ -25,7 +25,7 @@
                     @csrf
                     <div class="form-group">
                         <label for="n8n_video_webhook_url">n8n Video Webhook URL</label>
-                        <input type="url" class="form-control" id="n8n_video_webhook_url" name="n8n_video_webhook_url" value="{{  }}" placeholder="https://n8n.yourdomain.com/webhook/video-generate">
+                        <input type="url" class="form-control" id="n8n_video_webhook_url" name="n8n_video_webhook_url" value="{{ $n8n_video_webhook_url }}" placeholder="https://n8n.yourdomain.com/webhook/video-generate">
                         <small class="form-text text-muted">The URL of the Webhook node in your n8n workflow.</small>
                     </div>
 
@@ -42,7 +42,7 @@
                 <p class="text-muted mb-4">Your n8n workflow MUST send a POST request to this URL when the video is generated and uploaded to Facebook.</p>
                 
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="callbackUrl" value="{{  }}" readonly>
+                    <input type="text" class="form-control" id="callbackUrl" value="{{ $callback_url }}" readonly>
                     <div class="input-group-append">
                         <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('callbackUrl')">Copy</button>
                     </div>
@@ -52,7 +52,7 @@
                 <p class="text-muted">Copy this JSON and paste it directly into your n8n canvas. It contains the trigger webhook and the callback HTTP request pre-configured.</p>
                 
                 <div class="position-relative">
-                    <textarea id="n8nJson" class="form-control bg-dark text-light" rows="6" readonly style="font-family: monospace; font-size: 12px;">{{  }}</textarea>
+                    <textarea id="n8nJson" class="form-control bg-dark text-light" rows="6" readonly style="font-family: monospace; font-size: 12px;">{{ $n8n_template_json }}</textarea>
                     <button class="btn btn-sm btn-success position-absolute" style="top: 10px; right: 10px;" onclick="copyToClipboard('n8nJson')">Copy JSON</button>
                 </div>
             </div>
