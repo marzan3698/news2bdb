@@ -209,6 +209,7 @@
                             <ul class="sub-menu" aria-expanded="false">
                                 <li><a href="{{ route('admin.source-to-news.index') }}">All source list</a></li>
                                 <li><a href="{{ route('admin.source-to-news.snews') }}">Add new Snews</a></li>
+                                <li><a href="{{ route('admin.source-to-news.schedule') }}">Schedule Snews</a></li>
                             </ul>
                         </li>
                         <li>

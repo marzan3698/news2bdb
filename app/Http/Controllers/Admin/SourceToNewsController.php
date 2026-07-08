@@ -73,7 +73,33 @@ class SourceToNewsController extends Controller
         }
 
         $numToClone = (int) $request->input('number_of_news');
-        $recentUrls = Article::pluck('source_url')->filter()->toArray();
+        
+        $response = self::getNewsItemsToClone($numToClone);
+
+        if (!$response['success']) {
+            return response()->json($response);
+        }
+
+        return response()->json([
+            'success' => true,
+            'items' => $response['items']
+        ]);
+    }
+
+    /**
+     * Reusable static logic to fetch and interleave RSS news items.
+     * Can be used by ajax request or cron job.
+     */
+    public static function getNewsItemsToClone($numToClone)
+    {
+        $jagoStatus = Setting::where('key', 'jago1_source_status')->value('value') ?? '1';
+        $prothomStatus = Setting::where('key', 'prothom1_source_status')->value('value') ?? '1';
+
+        if ($jagoStatus === '0' && $prothomStatus === '0') {
+            return ['success' => false, 'message' => 'All fixed sources are currently disabled.'];
+        }
+
+        $recentUrls = \App\Models\Article::pluck('source_url')->filter()->toArray();
         $itemsToProcess = [];
 
         $jagoItems = [];
@@ -214,13 +240,13 @@ class SourceToNewsController extends Controller
         }
 
         if (empty($itemsToProcess)) {
-            return response()->json(['success' => false, 'message' => 'No new articles found to clone.']);
+            return ['success' => false, 'message' => 'No new articles found to clone.'];
         }
 
-        return response()->json([
+        return [
             'success' => true,
             'items' => $itemsToProcess
-        ]);
+        ];
     }
 
     /**
@@ -250,5 +276,42 @@ class SourceToNewsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * View for Schedule Snews
+     */
+    public function schedule()
+    {
+        $scheduleStatus = Setting::where('key', 'snews_schedule_status')->value('value') ?? '0';
+        $scheduleInterval = Setting::where('key', 'snews_schedule_interval')->value('value') ?? '10';
+        $scheduleCount = Setting::where('key', 'snews_schedule_count')->value('value') ?? '4';
+        
+        $cronSecret = Setting::where('key', 'snews_cron_secret')->value('value');
+        if (empty($cronSecret)) {
+            $cronSecret = \Illuminate\Support\Str::random(32);
+            Setting::updateOrCreate(['key' => 'snews_cron_secret'], ['value' => $cronSecret]);
+        }
+
+        return view('admin.source-to-news.schedule', compact('scheduleStatus', 'scheduleInterval', 'scheduleCount', 'cronSecret'));
+    }
+
+    /**
+     * Save Schedule Snews settings
+     */
+    public function saveSchedule(Request $request)
+    {
+        $request->validate([
+            'snews_schedule_interval' => 'required|integer|min:1',
+            'snews_schedule_count' => 'required|integer|min:1|max:50',
+        ]);
+
+        $status = $request->input('snews_schedule_status') ? '1' : '0';
+        
+        Setting::updateOrCreate(['key' => 'snews_schedule_status'], ['value' => $status]);
+        Setting::updateOrCreate(['key' => 'snews_schedule_interval'], ['value' => $request->input('snews_schedule_interval')]);
+        Setting::updateOrCreate(['key' => 'snews_schedule_count'], ['value' => $request->input('snews_schedule_count')]);
+
+        return redirect()->back()->with('success', 'Schedule settings saved successfully.');
     }
 }

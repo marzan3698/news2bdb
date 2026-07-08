@@ -19,6 +19,9 @@ Route::get('/terms-of-service', [HomeController::class, 'terms'])->name('terms')
 // n8n Webhook API Route (Exempt from CSRF in bootstrap/app.php)
 Route::post('/api/n8n/generate', [\App\Http\Controllers\Api\N8nController::class, 'generate']);
 
+// Cron Job API Route for Snews Auto Clone
+Route::get('/cron/snews', [\App\Http\Controllers\CronController::class, 'snews'])->name('cron.snews');
+
 Route::get('/dashboard', function () {
     if (auth()->user()->isAdmin()) {
         return redirect()->route('admin.dashboard');
@@ -63,6 +66,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'index'])->name('index');
         Route::post('/toggle-status', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'toggleStatus'])->name('toggle-status');
         Route::get('/snews', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'snews'])->name('snews');
+        Route::get('/schedule', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'schedule'])->name('schedule');
+        Route::post('/schedule', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'saveSchedule'])->name('schedule.save');
         Route::post('/clone/fetch', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'fetchRssNews'])->name('clone.fetch');
         Route::post('/clone/process', [\App\Http\Controllers\Admin\SourceToNewsController::class, 'processNewsItem'])->name('clone.process');
     });
