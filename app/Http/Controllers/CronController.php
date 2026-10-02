@@ -73,4 +73,57 @@ class CronController extends Controller
             'message' => "Cron execution completed. Processed: $processed, Failed: $failed"
         ]);
     }
+
+    /**
+     * Web Cron endpoint for Native Auto News Generation (No n8n needed).
+     * Hit via cPanel Cron (curl/wget) or external uptime ping.
+     */
+    public function autoGenerate(Request $request)
+    {
+        $key = $request->input('key');
+        $cronSecret = Setting::where('key', 'cron_secret')->value('value');
+
+        if (empty($cronSecret)) {
+            $cronSecret = Setting::where('key', 'snews_cron_secret')->value('value');
+        }
+
+        if (empty($cronSecret) || $key !== $cronSecret) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized cron execution. Invalid secret key.'
+            ], 401);
+        }
+
+        $schedulerEnabled = Setting::where('key', 'scheduler_enabled')->value('value') ?? '0';
+        if ($schedulerEnabled !== '1') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Auto news posting is currently disabled in admin settings.'
+            ]);
+        }
+
+        $count = min(max((int)($request->input('count', 1)), 1), 5);
+        $service = new \App\Services\NewsGeneratorService();
+        $results = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $res = $service->generate([], 1);
+            $results[] = [
+                'success' => $res['success'],
+                'message' => $res['message'],
+                'title'   => $res['article']->title ?? null,
+                'category'=> $res['article']->category->name ?? null,
+            ];
+            if ($i < $count - 1) {
+                sleep(2);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Auto news generation completed. Processed: {$count}",
+            'results' => $results,
+        ]);
+    }
 }
+

@@ -186,26 +186,117 @@ class SettingController extends Controller
         return redirect()->back()->with('success', 'General Settings updated successfully.');
     }
 
+    public function autoScheduler()
+    {
+        $scheduler_enabled = Setting::where('key', 'scheduler_enabled')->value('value') ?? '0';
+        $scheduler_interval = Setting::where('key', 'scheduler_interval')->value('value') ?? '30';
+        $cron_secret = Setting::where('key', 'cron_secret')->value('value');
+        
+        if (empty($cron_secret)) {
+            $cron_secret = Setting::where('key', 'snews_cron_secret')->value('value');
+            if (empty($cron_secret)) {
+                $cron_secret = \Illuminate\Support\Str::random(32);
+            }
+            Setting::updateOrCreate(['key' => 'cron_secret'], ['value' => $cron_secret]);
+        }
+
+        $gemini_api_key = Setting::where('key', 'gemini_api_key')->value('value');
+        $webCronUrl = url("/cron/auto-generate?key={$cron_secret}");
+        $artisanCommand = "php " . base_path('artisan') . " schedule:run >> /dev/null 2>&1";
+        $cliDirectCommand = "php " . base_path('artisan') . " news:generate --count=1 >> /dev/null 2>&1";
+
+        return view('admin.settings.auto-scheduler', compact(
+            'scheduler_enabled',
+            'scheduler_interval',
+            'cron_secret',
+            'webCronUrl',
+            'artisanCommand',
+            'cliDirectCommand',
+            'gemini_api_key'
+        ));
+    }
+
+    public function saveAutoScheduler(Request $request)
+    {
+        $request->validate([
+            'scheduler_interval' => 'required|in:5,10,15,30,60,120',
+            'cron_secret' => 'nullable|string|min:8',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'scheduler_enabled'], ['value' => $request->has('scheduler_enabled') ? '1' : '0']);
+        Setting::updateOrCreate(['key' => 'scheduler_interval'], ['value' => $request->scheduler_interval]);
+        
+        if ($request->filled('cron_secret')) {
+            Setting::updateOrCreate(['key' => 'cron_secret'], ['value' => $request->cron_secret]);
+        }
+
+        return redirect()->back()->with('success', 'Auto Post Scheduler settings updated successfully.');
+    }
+
+    public function runSchedulerNow()
+    {
+        $service = new \App\Services\NewsGeneratorService();
+        $result = $service->generate([], auth()->id() ?? 1);
+
+        return response()->json($result);
+    }
+
+    public function facebookSettings()
+    {
+        $facebook_enabled = Setting::where('key', 'facebook_enabled')->value('value') ?? '0';
+        $facebook_page_id = Setting::where('key', 'facebook_page_id')->value('value');
+        $facebook_page_access_token = Setting::where('key', 'facebook_page_access_token')->value('value');
+        $facebook_app_id = Setting::where('key', 'facebook_app_id')->value('value');
+        $facebook_app_secret = Setting::where('key', 'facebook_app_secret')->value('value');
+
+        return view('admin.settings.facebook', compact(
+            'facebook_enabled',
+            'facebook_page_id',
+            'facebook_page_access_token',
+            'facebook_app_id',
+            'facebook_app_secret'
+        ));
+    }
+
+    public function saveFacebookSettings(Request $request)
+    {
+        $request->validate([
+            'facebook_page_id' => 'nullable|string',
+            'facebook_page_access_token' => 'nullable|string',
+            'facebook_app_id' => 'nullable|string',
+            'facebook_app_secret' => 'nullable|string',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'facebook_enabled'], ['value' => $request->has('facebook_enabled') ? '1' : '0']);
+        Setting::updateOrCreate(['key' => 'facebook_page_id'], ['value' => $request->facebook_page_id]);
+        Setting::updateOrCreate(['key' => 'facebook_page_access_token'], ['value' => $request->facebook_page_access_token]);
+        Setting::updateOrCreate(['key' => 'facebook_app_id'], ['value' => $request->facebook_app_id]);
+        Setting::updateOrCreate(['key' => 'facebook_app_secret'], ['value' => $request->facebook_app_secret]);
+
+        return redirect()->back()->with('success', 'Facebook Auto-Post Settings updated successfully.');
+    }
+
+    public function testFacebookConnection()
+    {
+        $service = new \App\Services\FacebookPublisherService();
+        $result = $service->testConnection();
+
+        return response()->json($result);
+    }
+
     public function n8nSetup()
     {
-        $n8n_api_key = Setting::where('key', 'n8n_api_key')->value('value');
-        return view('admin.settings.n8n', compact('n8n_api_key'));
+        return redirect()->route('admin.settings.auto-scheduler');
     }
+
     public function n8nFacebook()
     {
-        $n8n_facebook_webhook_url = Setting::where('key', 'n8n_facebook_webhook_url')->value('value');
-        return view('admin.settings.n8n-facebook', compact('n8n_facebook_webhook_url'));
+        return redirect()->route('admin.settings.facebook');
     }
 
     public function saveN8nFacebook(Request $request)
     {
-        $request->validate([
-            'n8n_facebook_webhook_url' => 'nullable|url',
-        ]);
-
-        Setting::updateOrCreate(['key' => 'n8n_facebook_webhook_url'], ['value' => $request->n8n_facebook_webhook_url]);
-
-        return redirect()->back()->with('success', 'n8n Facebook Webhook URL updated successfully.');
+        return $this->saveFacebookSettings($request);
     }
 
     public function videoSetup()

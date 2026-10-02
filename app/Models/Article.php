@@ -44,6 +44,18 @@ class Article extends Model
     {
         static::created(function ($article) {
             if ($article->status === 'published') {
+                // 1. Direct Facebook Graph API posting (Native, no n8n required)
+                try {
+                    $fbService = new \App\Services\FacebookPublisherService();
+                    if ($fbService->isConfigured()) {
+                        $fbService->publish($article);
+                        return;
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Direct Facebook auto-post failed: ' . $e->getMessage());
+                }
+
+                // 2. Legacy fallback to n8n webhook if still configured
                 $webhookUrl = Setting::where('key', 'n8n_facebook_webhook_url')->value('value');
                 if ($webhookUrl) {
                     $tagsString = '';
@@ -52,7 +64,6 @@ class Article extends Model
                     }
 
                     $imageUrl = $article->image_url;
-                    // If image is relative, make it absolute
                     if ($imageUrl && !filter_var($imageUrl, FILTER_VALIDATE_URL)) {
                         $imageUrl = url($imageUrl);
                     }
@@ -65,9 +76,8 @@ class Article extends Model
                             'image' => $imageUrl,
                             'tags' => $tagsString,
                         ]);
-                    } catch (\Exception $e) {
-                        // Silently fail or log it. We don't want to break the article creation if webhook fails.
-                        \Illuminate\Support\Facades\Log::error('Failed to send n8n Facebook webhook: ' . $e->getMessage());
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Failed to send legacy n8n Facebook webhook: ' . $e->getMessage());
                     }
                 }
             }

@@ -20,8 +20,9 @@ Route::get('/terms-of-service', [HomeController::class, 'terms'])->name('terms')
 Route::post('/api/n8n/generate', [\App\Http\Controllers\Api\N8nController::class, 'generate']);
 Route::post('/api/n8n/video-callback', [\App\Http\Controllers\Admin\VideoNewsController::class, 'callback']);
 
-// Cron Job API Route for Snews Auto Clone
+// Cron Job API Routes for Native Auto News (No n8n needed)
 Route::get('/cron/snews', [\App\Http\Controllers\CronController::class, 'snews'])->name('cron.snews');
+Route::get('/cron/auto-generate', [\App\Http\Controllers\CronController::class, 'autoGenerate'])->name('cron.auto-generate');
 
 Route::get('/dashboard', function () {
     if (auth()->user()->isAdmin()) {
@@ -43,10 +44,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings/general', [SettingController::class, 'generalSettings'])->name('settings.general');
     Route::post('/settings/general', [SettingController::class, 'saveGeneralSettings'])->name('settings.general.save');
     
-    // n8n Setup
-    Route::get('/settings/n8n-setup', [SettingController::class, 'n8nSetup'])->name('settings.n8n');
+    // Native Auto Post Scheduler (Replaces n8n)
+    Route::get('/settings/auto-scheduler', [SettingController::class, 'autoScheduler'])->name('settings.auto-scheduler');
+    Route::post('/settings/auto-scheduler', [SettingController::class, 'saveAutoScheduler'])->name('settings.auto-scheduler.save');
+    Route::post('/settings/auto-scheduler/run-now', [SettingController::class, 'runSchedulerNow'])->name('settings.auto-scheduler.run-now');
     
-    // n8n +Facebook Setup
+    // Direct Facebook Auto-Post (Native, no n8n)
+    Route::get('/settings/facebook', [SettingController::class, 'facebookSettings'])->name('settings.facebook');
+    Route::post('/settings/facebook', [SettingController::class, 'saveFacebookSettings'])->name('settings.facebook.save');
+    Route::post('/settings/facebook/test', [SettingController::class, 'testFacebookConnection'])->name('settings.facebook.test');
+
+    // Legacy n8n routes (Redirects to new native settings)
+    Route::get('/settings/n8n-setup', [SettingController::class, 'n8nSetup'])->name('settings.n8n');
     Route::get('/settings/n8n-facebook', [SettingController::class, 'n8nFacebook'])->name('settings.n8n-facebook');
     Route::post('/settings/n8n-facebook', [SettingController::class, 'saveN8nFacebook'])->name('settings.n8n-facebook.save');
     
