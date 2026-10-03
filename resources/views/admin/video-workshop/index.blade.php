@@ -380,15 +380,21 @@
                 <div class="card-body">
                     <div class="row">
                         @foreach($liveNewsBulletins as $bulletin)
+                            @php
+                                $bThumb = $bulletin['image_url'] ?? $bulletin['thumbnail'] ?? '';
+                                $bChannel = $bulletin['channel_name'] ?? $bulletin['channel'] ?? 'YouTube';
+                                $bTitle = $bulletin['title'] ?? '';
+                                $bUrl = $bulletin['url'] ?? '';
+                            @endphp
                             <div class="col-md-6 col-lg-3 mb-3">
-                                <div class="bulletin-pill h-100 d-flex flex-column justify-content-between" onclick="pickBulletin('{{ addslashes($bulletin['url']) }}', '{{ addslashes($bulletin['title']) }}', '{{ addslashes($bulletin['thumbnail']) }}', '{{ addslashes($bulletin['channel']) }}')">
+                                <div class="bulletin-pill h-100 d-flex flex-column justify-content-between" onclick="pickBulletin('{{ addslashes($bUrl) }}', '{{ addslashes($bTitle) }}', '{{ addslashes($bThumb) }}', '{{ addslashes($bChannel) }}')">
                                     <div>
                                         <div style="position: relative;">
-                                            <img src="{{ $bulletin['thumbnail'] }}" alt="Thumb" class="w-100 rounded mb-2" style="height: 120px; object-fit: cover;">
-                                            <span class="badge badge-dark" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8);">{{ $bulletin['channel'] }}</span>
+                                            <img src="{{ $bThumb }}" alt="Thumb" class="w-100 rounded mb-2" style="height: 120px; object-fit: cover;">
+                                            <span class="badge badge-dark" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8);">{{ $bChannel }}</span>
                                         </div>
                                         <h6 class="font-weight-bold text-dark mb-1" style="font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                                            {{ $bulletin['title'] }}
+                                            {{ $bTitle }}
                                         </h6>
                                     </div>
                                     <button type="button" class="btn btn-outline-danger btn-sm btn-block mt-2 font-weight-bold">

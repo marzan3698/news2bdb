@@ -547,9 +547,20 @@ class VideoWorkshopService
     public function isBinaryExecutable(string $cmd): bool
     {
         try {
-            $testCmd = $cmd . ' --version 2>&1';
+            $testCmd = $cmd . ' -version 2>&1';
             $output = @shell_exec($testCmd);
-            return !empty($output) && !str_contains(strtolower($output), 'not recognized') && !str_contains(strtolower($output), 'no such file');
+            if (empty($output)) {
+                return false;
+            }
+            $lower = strtolower($output);
+            if (str_contains($lower, 'not recognized') || 
+                str_contains($lower, 'cannot find') || 
+                str_contains($lower, 'no such file') ||
+                str_contains($lower, 'command not found') ||
+                str_contains($lower, 'syntax error')) {
+                return false;
+            }
+            return str_contains($lower, 'version') || str_contains($lower, 'copyright');
         } catch (\Throwable $e) {
             return false;
         }
