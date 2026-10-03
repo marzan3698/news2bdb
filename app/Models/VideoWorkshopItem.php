@@ -67,7 +67,7 @@ class VideoWorkshopItem extends Model
         if (empty($this->original_video_path)) {
             return null;
         }
-        return Storage::disk('public')->url($this->original_video_path);
+        return asset('storage/' . $this->original_video_path);
     }
 
     /**
@@ -78,7 +78,7 @@ class VideoWorkshopItem extends Model
         if (empty($this->processed_video_path)) {
             return null;
         }
-        return Storage::disk('public')->url($this->processed_video_path);
+        return asset('storage/' . $this->processed_video_path);
     }
 
     /**

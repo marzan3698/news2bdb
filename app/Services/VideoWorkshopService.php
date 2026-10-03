@@ -130,19 +130,25 @@ class VideoWorkshopService
         $outputPath = $originalsDir . DIRECTORY_SEPARATOR . $filename;
 
         // Command to download video with best compatibility (MP4 format with AAC audio)
-        // Format selector: best video (up to 1080p) + best audio merged into mp4
         $escapedYtdlp = $ytdlp;
         $escapedUrl = escapeshellarg($item->source_url);
         $escapedOutput = escapeshellarg($outputPath);
 
-        $cmd = "{$escapedYtdlp} -f \"bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best\" --no-playlist --merge-output-format mp4 -o {$escapedOutput} {$escapedUrl} 2>&1";
+        $ffmpegPath = $this->getFfmpegBinary();
+        $ffmpegDir = ($ffmpegPath && $this->isBinaryExecutable($ffmpegPath)) 
+            ? (is_dir($ffmpegPath) ? $ffmpegPath : dirname($ffmpegPath))
+            : null;
+        $ffmpegFlag = $ffmpegDir ? "--ffmpeg-location " . escapeshellarg($ffmpegDir) . " " : "";
+
+        // Standard merge to MP4
+        $cmd = "{$escapedYtdlp} {$ffmpegFlag}--merge-output-format mp4 --no-playlist -o {$escapedOutput} {$escapedUrl} 2>&1";
         
         Log::info("Executing yt-dlp: " . $cmd);
         $output = shell_exec($cmd);
 
         if (!file_exists($outputPath) || filesize($outputPath) < 1000) {
             // Fallback download attempt with simpler format selector
-            $cmdFallback = "{$escapedYtdlp} -f \"best\" --no-playlist -o {$escapedOutput} {$escapedUrl} 2>&1";
+            $cmdFallback = "{$escapedYtdlp} {$ffmpegFlag}-f \"best\" --no-playlist -o {$escapedOutput} {$escapedUrl} 2>&1";
             $output = shell_exec($cmdFallback);
         }
 
@@ -494,10 +500,11 @@ class VideoWorkshopService
 
         // Potential paths
         $candidates = [
+            storage_path('app/bin/ffmpeg.exe'),
+            storage_path('app/bin/ffmpeg'),
             'ffmpeg',
             '/usr/bin/ffmpeg',
             '/usr/local/bin/ffmpeg',
-            storage_path('app/bin/ffmpeg'),
             'C:\\ffmpeg\\bin\\ffmpeg.exe',
             'ffmpeg.exe',
         ];
