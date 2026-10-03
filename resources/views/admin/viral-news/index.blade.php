@@ -298,6 +298,31 @@
         </div>
     </div>
 </div>
+
+<!-- Modal for YouTube Video Preview -->
+<div class="modal fade" id="ytPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white py-2 px-3">
+                <h5 class="modal-title font-weight-bold" id="ytPreviewModalTitle" style="font-size: 14px;">
+                    <i class="mdi mdi-youtube text-danger mr-1"></i> ইউটিউব ভিডিও প্রিভিউ
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="closeYtPreview()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0 bg-dark">
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+                    <iframe id="ytPreviewIframe" src="" style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
+                <span class="text-muted font-weight-bold" id="ytPreviewSource" style="font-size: 13px;"></span>
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" onclick="closeYtPreview()">বন্ধ করুন</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -441,10 +466,23 @@ function renderTable(items) {
                     <i class="mdi mdi-clock-outline mr-1"></i>পোস্ট হয়নি
                 </span>
             `;
+
+            let playPreviewBtn = '';
+            if (item.video_id) {
+                playPreviewBtn = `
+                    <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold mr-1" onclick="previewYtVideo('${item.video_id}', '${escapeHtml(item.title)}', '${escapeHtml(item.source_name)}')">
+                        <i class="mdi mdi-play mr-1"></i>ভিডিও
+                    </button>
+                `;
+            }
+
             actionBtnHtml = `
-                <button type="button" class="btn-generate btn-sm" onclick="generateFromItem('${item.id}')">
-                    <i class="mdi mdi-creation mr-1"></i>পোস্ট তৈরি
-                </button>
+                <div class="d-flex justify-content-center">
+                    ${playPreviewBtn}
+                    <button type="button" class="btn-generate btn-sm" onclick="generateFromItem('${item.id}')">
+                        <i class="mdi mdi-creation mr-1"></i>পোস্ট তৈরি
+                    </button>
+                </div>
             `;
         }
 
@@ -452,12 +490,18 @@ function renderTable(items) {
             ? `<a href="${item.source_url}" target="_blank" class="text-muted ml-1" title="মূল উৎস দেখুন"><i class="mdi mdi-open-in-new" style="font-size: 12px;"></i></a>` 
             : '';
 
-        let thumbHtml = item.image_url 
-            ? `<div style="position: relative; flex-shrink: 0; width: 68px; height: 48px;" class="mr-2">
-                 <img src="${item.image_url}" class="rounded shadow-sm" style="width: 100%; height: 100%; object-fit: cover;" alt="thumb">
-                 ${item.source_type === 'YouTube News TV' ? '<span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.7); color: #ff0000; font-size: 10px; border-radius: 2px; padding: 0 2px;"><i class="mdi mdi-play"></i></span>' : ''}
-               </div>` 
-            : '';
+        let thumbHtml = '';
+        if (item.image_url) {
+            let clickAction = item.video_id 
+                ? `onclick="previewYtVideo('${item.video_id}', '${escapeHtml(item.title)}', '${escapeHtml(item.source_name)}')" style="cursor: pointer;" title="ভিডিওটি দেখুন"` 
+                : '';
+
+            thumbHtml = `
+                <div style="position: relative; flex-shrink: 0; width: 72px; height: 50px;" class="mr-2" ${clickAction}>
+                     <img src="${item.image_url}" class="rounded shadow-sm" style="width: 100%; height: 100%; object-fit: cover;" alt="thumb">
+                     ${item.source_type === 'YouTube News TV' ? '<span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.75); color: #ff0000; font-size: 11px; border-radius: 3px; padding: 1px 3px;"><i class="mdi mdi-play"></i></span>' : ''}
+                </div>`;
+        }
 
         html += `
             <tr id="row-${item.id}">
@@ -626,11 +670,29 @@ function escapeHtml(text) {
     return text.toString().replace(/[&<>"']/g, m => map[m]);
 }
 
+function previewYtVideo(videoId, title, sourceName) {
+    if (!videoId) return;
+    document.getElementById('ytPreviewModalTitle').innerHTML = `<i class="mdi mdi-youtube text-danger mr-1"></i> ${escapeHtml(title)}`;
+    document.getElementById('ytPreviewSource').innerText = `উৎস: ${sourceName}`;
+    document.getElementById('ytPreviewIframe').src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    $('#ytPreviewModal').modal('show');
+}
+
+function closeYtPreview() {
+    document.getElementById('ytPreviewIframe').src = '';
+}
+
+$('#ytPreviewModal').on('hidden.bs.modal', function () {
+    closeYtPreview();
+});
+
 // Expose functions to global window scope so HTML onclick/onchange attributes always find them
 window.loadTrends = loadTrends;
 window.applyFilters = applyFilters;
 window.generateFromItem = generateFromItem;
 window.toggleAutoViral = toggleAutoViral;
+window.previewYtVideo = previewYtVideo;
+window.closeYtPreview = closeYtPreview;
 
 // Initialize on page load
 if (document.readyState === 'loading') {

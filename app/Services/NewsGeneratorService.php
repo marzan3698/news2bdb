@@ -83,6 +83,10 @@ class NewsGeneratorService
                     'image_url' => $customSourceData['image_url'] ?? '',
                     'name'      => $customSourceData['name'] ?? 'n8n Push',
                     'force_use_source' => $customSourceData['force_use_source'] ?? false,
+                    'video_id'  => $customSourceData['video_id'] ?? null,
+                    'embed_url' => $customSourceData['embed_url'] ?? null,
+                    'source_type' => $customSourceData['source_type'] ?? null,
+                    'is_political' => $customSourceData['is_political'] ?? false,
                 ];
             } else {
                 $sourceData = $this->fetchFromSources($categoryId, $recentUrls);
@@ -231,12 +235,16 @@ class NewsGeneratorService
                 $viralService = new ViralNewsService();
                 $topTrend = $viralService->getTopUnpublishedTrend();
                 if ($topTrend && !empty($topTrend['title'])) {
+                    $isYt = ($topTrend['source_type'] ?? '') === 'YouTube News TV';
                     return [
                         'headline'  => $topTrend['title'],
                         'content'   => ($topTrend['snippet'] ?? '') . "\n\n(টপিক: " . ($topTrend['query'] ?? '') . ", উৎস: " . ($topTrend['source_name'] ?? '') . ", অনুসন্ধান মাত্রা: " . ($topTrend['traffic'] ?? 'উচ্চ') . ")",
                         'image_url' => $topTrend['image_url'] ?? null,
-                        'name'      => 'Viral: ' . ($topTrend['source_name'] ?? 'Google Trends'),
+                        'name'      => $isYt ? ($topTrend['source_name'] ?? 'YouTube') : ('Viral: ' . ($topTrend['source_name'] ?? 'Google Trends')),
                         'url'       => $topTrend['source_url'] ?? null,
+                        'video_id'  => $topTrend['video_id'] ?? null,
+                        'embed_url' => $topTrend['embed_url'] ?? null,
+                        'source_type' => $topTrend['source_type'] ?? null,
                         'tier'      => 0,
                     ];
                 }
@@ -629,6 +637,8 @@ class NewsGeneratorService
                 return $this->parseRssUrl($source->url, $source->name, $recentUrls);
             } elseif ($source->type === 'facebook') {
                 return $this->fetchFacebook($source, $result, $recentUrls);
+            } elseif ($source->type === 'youtube') {
+                return $this->fetchYouTube($source, $result, $recentUrls);
             } elseif ($source->type === 'scraping') {
                 return $this->fetchScraping($source, $result, $recentUrls);
             }
@@ -727,6 +737,34 @@ class NewsGeneratorService
         return $result;
     }
 
+    protected function fetchYouTube(AiSource $source, array $result, array $recentUrls = []): array
+    {
+        try {
+            $ytService = new YouTubeNewsService();
+            $videos = $ytService->fetchChannelVideos($source->url, 5, $source->name);
+
+            foreach ($videos as $video) {
+                if (in_array($video['url'], $recentUrls)) continue;
+
+                $result['headline'] = $video['title'];
+                $result['content'] = ($video['description'] ? $video['description'] . "\n\n" : '') .
+                    "({$source->name}-এর ইউটিউব ভিডিও প্রতিবেদন: {$video['raw_title']})";
+                $result['image_url'] = $video['image_url'];
+                $result['url'] = $video['url'];
+                $result['date'] = $video['published_at'];
+                $result['video_id'] = $video['video_id'];
+                $result['embed_url'] = $video['embed_url'];
+                $result['source_type'] = 'YouTube News TV';
+                $result['name'] = $source->name;
+                break;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("NewsGeneratorService: Failed fetching YouTube source {$source->name}: " . $e->getMessage());
+        }
+
+        return $result;
+    }
+
     protected function fetchScraping(AiSource $source, array $result, array $recentUrls = []): array
     {
         if (in_array($source->url, $recentUrls)) return $result;
@@ -763,6 +801,11 @@ class NewsGeneratorService
             $categoriesList = Category::pluck('name')->implode(', ');
             $prompt = "Generate a highly engaging, SEO-friendly news article about Bangladesh in Bengali. You MUST completely translate, rewrite and adapt the provided source news accurately. DO NOT ignore the source.\n";
             $prompt .= "CRITICAL: Today's date and time is {$currentDate}. Ensure all references to time are relative to this exact date.\n";
+
+            if (!empty($sourceData['video_id']) || ($sourceData['source_type'] ?? '') === 'YouTube News TV') {
+                $prompt .= "SPECIAL INSTRUCTION FOR YOUTUBE VIDEO BULLETIN: This news is sourced from a verified television channel YouTube video report. Clean up any anchor names, YouTube channel promos, or hashtags from the headline. Write a comprehensive, objective, rich and detailed journalistic news article in standard Bengali based on the facts in this video.\n";
+            }
+
             $prompt .= "Source Headline: {$sourceData['headline']}\n";
             $prompt .= "Source Content:\n" . mb_substr($sourceData['content'], 0, 2000, 'UTF-8') . "\n\n";
             $prompt .= "You must classify this news into ONE of the following EXACT categories: [{$categoriesList}].\n";
@@ -925,8 +968,14 @@ class NewsGeneratorService
             $sourceImageUrl = $sourceData['image_url'] ?? null;
             $articlePageUrl = $sourceData['url'] ?? null;
 
+            // Attempt 0: High-Res YouTube MaxRes thumbnail if video_id is present
+            if (!empty($sourceData['video_id'])) {
+                $maxresUrl = "https://i.ytimg.com/vi/{$sourceData['video_id']}/maxresdefault.jpg";
+                $realImgResult = $this->downloadImage($maxresUrl);
+            }
+
             // Attempt 1: Direct RSS image URL
-            if ($sourceMatched && !empty($sourceImageUrl) && filter_var($sourceImageUrl, FILTER_VALIDATE_URL)) {
+            if (!$realImgResult && $sourceMatched && !empty($sourceImageUrl) && filter_var($sourceImageUrl, FILTER_VALIDATE_URL)) {
                 $realImgResult = $this->downloadImage($sourceImageUrl, $articlePageUrl);
             }
 
@@ -1435,10 +1484,10 @@ class NewsGeneratorService
             $sourceTitle = htmlspecialchars($sourceData['name'] ?? 'YouTube', ENT_QUOTES, 'UTF-8');
             $article->content .= '
             <div class="my-4 text-center">
-                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 720px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 720px; margin: 0 auto; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.2);">
                     <iframe src="https://www.youtube.com/embed/' . $vidId . '" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
                 </div>
-                <small class="text-muted mt-2 d-block">ভিডিও সূত্র: ' . $sourceTitle . '</small>
+                <small class="text-muted mt-2 d-inline-block font-weight-bold"><i class="mdi mdi-youtube text-danger mr-1" style="font-size: 16px;"></i> ভিডিও প্রতিবেদন সূত্র: ' . $sourceTitle . '</small>
             </div>';
         }
 

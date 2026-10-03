@@ -98,6 +98,27 @@ class HomeController extends Controller
             ->take(4)
             ->get();
 
+        // 7. Multimedia Video News Gallery (YouTube / Video articles)
+        $video_articles = Article::where('status', 'published')
+            ->where(function ($q) {
+                $q->where('content', 'like', '%youtube.com/embed%')
+                  ->orWhere('source_name', 'like', '%YouTube%')
+                  ->orWhere('source_name', 'like', '%টিভি%')
+                  ->orWhere('source_name', 'like', '%ভিডিও%');
+            })
+            ->latest()
+            ->take(4)
+            ->get();
+
+        if ($video_articles->count() < 4) {
+            $filler = Article::where('status', 'published')
+                ->whereNotIn('id', $video_articles->pluck('id')->toArray())
+                ->latest()
+                ->take(4 - $video_articles->count())
+                ->get();
+            $video_articles = $video_articles->merge($filler);
+        }
+
         return view('welcome', compact(
             'categories',
             'featured_article',
@@ -115,7 +136,8 @@ class HomeController extends Controller
             'entertainment_articles',
             'tech_articles',
             'lifestyle_articles',
-            'sarabangla_articles'
+            'sarabangla_articles',
+            'video_articles'
         ));
     }
 

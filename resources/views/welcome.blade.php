@@ -621,47 +621,66 @@
         <!-- 8. Multimedia Gallery Section -->
         <div class="gallery-section">
             <div class="container">
-                <div class="gallery-title">
-                    <div class="gallery-title-text"><i class="fas fa-video me-1"></i> ভিডিও গ্যালারি</div>
+                <div class="section-title-bar mb-4">
+                    <h3><i class="fas fa-video me-2 text-danger"></i> ভিডিও গ্যালারি</h3>
                 </div>
                 
                 <div class="row">
-                    <div class="col-lg-3 col-md-6">
-                        <div class="gallery-card">
-                            <img src="{{ asset('images/pm_visit.png') }}" alt="Video">
-                            <div class="gallery-overlay-play">
-                                <i class="far fa-play-circle"></i>
-                            </div>
-                            <h5 class="gallery-card-title">বাংলাদেশ ও চীনের দ্বিপাক্ষিক সম্পর্কের নতুন দিগন্ত</h5>
+                    @if(isset($video_articles) && count($video_articles) > 0)
+                        @foreach($video_articles as $vArt)
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('news.show', $vArt->slug) }}" class="text-decoration-none d-block">
+                                <div class="gallery-item shadow-sm">
+                                    <img src="{{ $vArt->image_url ?: asset('images/lead_national.png') }}" alt="{{ $vArt->title }}">
+                                    <div class="gallery-icon bg-danger text-white">
+                                        <i class="fas fa-play" style="font-size: 12px; margin-left: 2px;"></i>
+                                    </div>
+                                    <div class="gallery-overlay">
+                                        <span class="badge bg-danger text-white mb-1" style="font-size: 10px;">{{ $vArt->source_name ?: 'ভিডিও প্রতিবেদন' }}</span>
+                                        <h5>{{ Str::limit($vArt->title, 55) }}</h5>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6">
-                        <div class="gallery-card">
-                            <img src="{{ asset('images/sports_brazil.png') }}" alt="Video">
-                            <div class="gallery-overlay-play">
-                                <i class="far fa-play-circle"></i>
+                        @endforeach
+                    @else
+                        <div class="col-lg-3 col-md-6">
+                            <div class="gallery-card">
+                                <img src="{{ asset('images/pm_visit.png') }}" alt="Video">
+                                <div class="gallery-overlay-play">
+                                    <i class="far fa-play-circle"></i>
+                                </div>
+                                <h5 class="gallery-card-title">বাংলাদেশ ও চীনের দ্বিপাক্ষিক সম্পর্কের নতুন দিগন্ত</h5>
                             </div>
-                            <h5 class="gallery-card-title">রোমাঞ্চকর জয়ে শেষ ষোলোতে ব্রাজিলের আনন্দ উদযাপন</h5>
                         </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6">
-                        <div class="gallery-card">
-                            <img src="{{ asset('images/earthquake.png') }}" alt="Video">
-                            <div class="gallery-overlay-play">
-                                <i class="far fa-play-circle"></i>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="gallery-card">
+                                <img src="{{ asset('images/sports_brazil.png') }}" alt="Video">
+                                <div class="gallery-overlay-play">
+                                    <i class="far fa-play-circle"></i>
+                                </div>
+                                <h5 class="gallery-card-title">রোমাঞ্চকর জয়ে শেষ ষোলোতে ব্রাজিলের আনন্দ উদযাপন</h5>
                             </div>
-                            <h5 class="gallery-card-title">ভেনিজুয়েলায় ভূমিকম্প কবলিত এলাকার ড্রোন চিত্র</h5>
                         </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6">
-                        <div class="gallery-card">
-                            <img src="{{ asset('images/lead_national.png') }}" alt="Video">
-                            <div class="gallery-overlay-play">
-                                <i class="far fa-play-circle"></i>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="gallery-card">
+                                <img src="{{ asset('images/earthquake.png') }}" alt="Video">
+                                <div class="gallery-overlay-play">
+                                    <i class="far fa-play-circle"></i>
+                                </div>
+                                <h5 class="gallery-card-title">ভেনিজুয়েলায় ভূমিকম্প কবলিত এলাকার ড্রোন চিত্র</h5>
                             </div>
-                            <h5 class="gallery-card-title">কৃত্রিম বুদ্ধিমত্তা ও বিজ্ঞান নিয়ে নতুন তথ্যচিত্র</h5>
                         </div>
-                    </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="gallery-card">
+                                <img src="{{ asset('images/lead_national.png') }}" alt="Video">
+                                <div class="gallery-overlay-play">
+                                    <i class="far fa-play-circle"></i>
+                                </div>
+                                <h5 class="gallery-card-title">কৃত্রিম বুদ্ধিমত্তা ও বিজ্ঞান নিয়ে নতুন তথ্যচিত্র</h5>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

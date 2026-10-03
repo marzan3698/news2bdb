@@ -43,15 +43,16 @@
                         <label for="type" class="font-weight-bold">Source Type</label>
                         <select name="type" id="type" class="form-control" required>
                             <option value="rss" {{ old('type') == 'rss' ? 'selected' : '' }}>RSS Feed Link (Recommended)</option>
+                            <option value="youtube" {{ old('type') == 'youtube' ? 'selected' : '' }}>📺 YouTube News Channel (@handle, URL or Channel ID)</option>
                             <option value="facebook" {{ old('type') == 'facebook' ? 'selected' : '' }}>Facebook Page ID/Username</option>
                             <option value="scraping" {{ old('type') == 'scraping' ? 'selected' : '' }}>Web Page HTML Scraping</option>
                         </select>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label for="url" class="font-weight-bold">URL / Address / Page identifier</label>
-                        <input type="text" name="url" class="form-control" id="url" placeholder="e.g. https://www.prothomalo.com/feed or facebook-page-username" value="{{ old('url') }}" required>
-                        <small class="form-text text-muted" id="url-help">Provide the full RSS XML feed URL.</small>
+                        <label for="url" class="font-weight-bold">URL / Address / Channel identifier</label>
+                        <input type="text" name="url" class="form-control" id="url" placeholder="e.g. https://www.prothomalo.com/feed or @JamunaTVbd" value="{{ old('url') }}" required>
+                        <small class="form-text text-muted" id="url-help">Provide the full RSS XML feed URL or YouTube channel link.</small>
                     </div>
 
                     <div class="form-group mb-3">
@@ -81,6 +82,9 @@
             if(typeSelect.value === 'rss') {
                 urlHelp.innerHTML = 'Provide the full RSS XML feed URL (e.g., <code>https://www.prothomalo.com/feed</code>)';
                 urlInput.placeholder = 'e.g. https://www.prothomalo.com/feed';
+            } else if(typeSelect.value === 'youtube') {
+                urlHelp.innerHTML = 'Provide YouTube Channel URL, @handle (e.g. <code>@JamunaTVbd</code>, <code>@SomoyTV</code>), Channel ID (<code>UC2qb5FD5IRnXEP4CBdt7PvA</code>), or RSS feed URL.';
+                urlInput.placeholder = 'e.g. https://www.youtube.com/@JamunaTVbd or @JamunaTVbd';
             } else if(typeSelect.value === 'facebook') {
                 urlHelp.innerHTML = 'Provide the Facebook Page username or numeric ID (e.g., <code>ProthomAlo</code> or <code>12345678901</code>). Make sure Facebook credentials are saved in settings.';
                 urlInput.placeholder = 'e.g. ProthomAlo';

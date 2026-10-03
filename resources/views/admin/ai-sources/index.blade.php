@@ -50,11 +50,13 @@
                                     <td><strong>{{ $source->name }}</strong></td>
                                     <td>
                                         @if($source->type == 'rss')
-                                            <span class="badge badge-info">RSS Feed</span>
+                                            <span class="badge badge-info"><i class="mdi mdi-rss mr-1"></i>RSS Feed</span>
+                                        @elseif($source->type == 'youtube')
+                                            <span class="badge badge-danger" style="background-color: #ff0000;"><i class="mdi mdi-youtube mr-1"></i>YouTube Channel</span>
                                         @elseif($source->type == 'facebook')
-                                            <span class="badge badge-primary">Facebook Page</span>
+                                            <span class="badge badge-primary"><i class="mdi mdi-facebook mr-1"></i>Facebook Page</span>
                                         @else
-                                            <span class="badge badge-secondary">Web Scraping</span>
+                                            <span class="badge badge-secondary"><i class="mdi mdi-web mr-1"></i>Web Scraping</span>
                                         @endif
                                     </td>
                                     <td><code class="text-dark">{{ $source->url }}</code></td>

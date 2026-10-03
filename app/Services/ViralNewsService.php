@@ -84,98 +84,41 @@ class ViralNewsService
     protected function fetchYouTubeNewsChannels(): array
     {
         $items = [];
-        $channels = [
-            'যমুনা টিভি' => ['id' => 'UC2qb5FD5IRnXEP4CBdt7PvA', 'handle' => '@JamunaTVbd'],
-            'সময় টিভি' => ['id' => 'UCxHoBXkY88Tb8z1Ssj6CWsQ', 'handle' => '@somoytvnetupdate'],
-            'চ্যানেল ২৪' => ['id' => 'UCHLqIOMPk20w-6cFgkA90jw', 'handle' => '@channel24digital'],
-            'ইনডিপেনডেন্ট টিভি' => ['id' => 'UCATUkaOHwO9EP_W87zCiPbA', 'handle' => '@IndependentTelevision'],
-            'একাত্তর টিভি' => ['id' => 'UCtqvtAVmad5zywaziN6CbfA', 'handle' => '@EkattorTelevision'],
-            'আরটিভি নিউজ' => ['id' => 'UC2P5Fd5g41Gtdqf0Uzh8Qaw', 'handle' => '@RtvNews'],
-        ];
+        try {
+            $ytService = new YouTubeNewsService();
+            $videos = $ytService->fetchTopBangladeshiNews(4);
 
-        foreach ($channels as $channelName => $info) {
-            $rssUrl = "https://www.youtube.com/feeds/videos.xml?channel_id={$info['id']}";
-            try {
-                $response = Http::timeout(8)
-                    ->withHeaders(['User-Agent' => $this->userAgents[0]])
-                    ->get($rssUrl);
+            foreach ($videos as $video) {
+                $title = $video['title'];
+                $description = $video['description'] ?? '';
+                $isPolitical = $this->isPoliticalText($title . ' ' . $description);
+                $badge = $isPolitical ? '🏛️ রাজনৈতিক ব্রেকিং' : '📺 ইউটিউব নিউজ';
+                $publishedAt = $video['published_at'] instanceof Carbon ? $video['published_at'] : now();
 
-                if (!$response->successful()) continue;
-
-                $xml = @simplexml_load_string($response->body(), 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
-                if (!$xml || !isset($xml->entry)) continue;
-
-                $count = 0;
-                foreach ($xml->entry as $entry) {
-                    if ($count >= 4) break; // Top 4 latest per channel
-
-                    $title = trim((string)$entry->title);
-                    $link = (string)($entry->link->attributes()->href ?? '');
-                    $publishedStr = (string)$entry->published;
-                    $publishedAt = !empty($publishedStr) ? Carbon::parse($publishedStr) : now();
-
-                    // Extract Video ID
-                    $ytNs = $entry->children('http://www.youtube.com/xml/schemas/2015');
-                    $videoId = (string)($ytNs->videoId ?? '');
-                    if (empty($videoId) && preg_match('/v=([a-zA-Z0-9_-]+)/', $link, $m)) {
-                        $videoId = $m[1];
-                    }
-
-                    // Media NS for thumbnail & description & view count
-                    $media = $entry->children('http://search.yahoo.com/mrss/');
-                    $thumbnail = null;
-                    $description = '';
-                    $views = null;
-
-                    if ($media && isset($media->group)) {
-                        if (isset($media->group->thumbnail)) {
-                            $thumbAttrs = $media->group->thumbnail->attributes();
-                            $thumbnail = (string)($thumbAttrs['url'] ?? '');
-                        }
-                        if (isset($media->group->description)) {
-                            $description = strip_tags((string)$media->group->description);
-                        }
-                        if (isset($media->group->community->statistics)) {
-                            $statAttrs = $media->group->community->statistics->attributes();
-                            $views = (int)($statAttrs['views'] ?? 0);
-                        }
-                    }
-
-                    // Fallback thumbnail
-                    if (empty($thumbnail) && $videoId) {
-                        $thumbnail = "https://i.ytimg.com/vi/{$videoId}/hqdefault.jpg";
-                    }
-
-                    $isPolitical = $this->isPoliticalText($title . ' ' . $description);
-                    $trafficText = $views > 0 ? number_format($views) . ' ভিউ' : 'ইউটিউব ব্রেকিং';
-
-                    $badge = $isPolitical ? '🏛️ রাজনৈতিক ব্রেকিং' : '📺 ইউটিউব নিউজ';
-
-                    $items[] = [
-                        'id'            => 'yt_' . ($videoId ?: md5($title . $link)),
-                        'title'         => $title,
-                        'query'         => $title,
-                        'source_type'   => 'YouTube News TV',
-                        'source_name'   => $channelName,
-                        'source_url'    => $link,
-                        'image_url'     => $thumbnail,
-                        'video_id'      => $videoId,
-                        'embed_url'     => $videoId ? "https://www.youtube.com/embed/{$videoId}" : null,
-                        'snippet'       => $description ? mb_substr($description, 0, 250, 'UTF-8') : "{$channelName}-এর ইউটিউব ভিডিও বুলেটিন: {$title}",
-                        'traffic'       => $trafficText,
-                        'traffic_raw'   => $views ?: 5000,
-                        'is_hot'        => true,
-                        'is_political'  => $isPolitical,
-                        'badge'         => $badge,
-                        'published_at'  => $publishedAt->toISOString(),
-                        'time_ago'      => $publishedAt->locale('bn')->diffForHumans(),
-                        'category_guess'=> $isPolitical ? 'রাজনীতি' : $this->guessCategory($title . ' ' . $description),
-                    ];
-                    $count++;
-                }
-            } catch (\Throwable $e) {
-                Log::warning("ViralNewsService: Failed to fetch YouTube channel {$channelName}: " . $e->getMessage());
+                $items[] = [
+                    'id'            => 'yt_' . ($video['video_id'] ?: md5($title . $video['url'])),
+                    'title'         => $title,
+                    'raw_title'     => $video['raw_title'] ?? $title,
+                    'query'         => $title,
+                    'source_type'   => 'YouTube News TV',
+                    'source_name'   => $video['source_name'] ?? 'YouTube News TV',
+                    'source_url'    => $video['url'],
+                    'image_url'     => $video['image_url'],
+                    'video_id'      => $video['video_id'],
+                    'embed_url'     => $video['embed_url'],
+                    'snippet'       => $description ? mb_substr($description, 0, 250, 'UTF-8') : "{$video['source_name']}-এর ইউটিউব ভিডিও বুলেটিন: {$title}",
+                    'traffic'       => $video['traffic'],
+                    'traffic_raw'   => $video['views'] ?: 5000,
+                    'is_hot'        => true,
+                    'is_political'  => $isPolitical,
+                    'badge'         => $badge,
+                    'published_at'  => $publishedAt->toISOString(),
+                    'time_ago'      => $publishedAt->locale('bn')->diffForHumans(),
+                    'category_guess'=> $isPolitical ? 'রাজনীতি' : $this->guessCategory($title . ' ' . $description),
+                ];
             }
+        } catch (\Throwable $e) {
+            Log::warning('ViralNewsService: Failed to fetch YouTube TV news: ' . $e->getMessage());
         }
 
         return $items;
@@ -494,14 +437,20 @@ class ViralNewsService
         $generator = new NewsGeneratorService();
 
         // Custom source payload designed specifically for viral & trending items
+        $sourceType = $trendItem['source_type'] ?? 'Google Trends';
+        $sourceName = $trendItem['source_name'] ?? 'Google Trends';
+        $isYouTube = $sourceType === 'YouTube News TV';
+
         $customSourceData = [
             'headline'         => $trendItem['title'] ?? '',
-            'content'          => ($trendItem['snippet'] ?? '') . "\n\n(টপিক: " . ($trendItem['query'] ?? '') . ", উৎস: " . ($trendItem['source_name'] ?? '') . ", অনুসন্ধান মাত্রা: " . ($trendItem['traffic'] ?? 'উচ্চ') . ")",
+            'content'          => ($trendItem['snippet'] ?? '') . "\n\n(টপিক: " . ($trendItem['query'] ?? '') . ", উৎস: " . $sourceName . ", অনুসন্ধান মাত্রা: " . ($trendItem['traffic'] ?? 'উচ্চ') . ")",
             'url'              => $trendItem['source_url'] ?? '',
             'image_url'        => $trendItem['image_url'] ?? '',
-            'name'             => 'ভাইরাল ট্রেন্ড: ' . ($trendItem['source_name'] ?? 'Google Trends'),
+            'name'             => $isYouTube ? $sourceName : 'ভাইরাল ট্রেন্ড: ' . $sourceName,
             'force_use_source' => true,
             'video_id'         => $trendItem['video_id'] ?? null,
+            'embed_url'        => $trendItem['embed_url'] ?? null,
+            'source_type'      => $sourceType,
             'is_political'     => $trendItem['is_political'] ?? false,
         ];
 

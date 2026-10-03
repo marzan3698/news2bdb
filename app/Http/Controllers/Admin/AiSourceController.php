@@ -24,13 +24,13 @@ class AiSourceController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|string',
-            'type' => 'required|in:rss,facebook,scraping',
+            'type' => 'required|in:rss,facebook,scraping,youtube',
             'status' => 'nullable|boolean',
         ]);
 
         $source = new AiSource();
         $source->name = $request->name;
-        $source->url = $request->url;
+        $source->url = trim($request->url);
         $source->type = $request->type;
         $source->status = $request->has('status') ? 1 : 0;
         $source->save();
@@ -49,13 +49,13 @@ class AiSourceController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|string',
-            'type' => 'required|in:rss,facebook,scraping',
+            'type' => 'required|in:rss,facebook,scraping,youtube',
             'status' => 'nullable|boolean',
         ]);
 
         $source = AiSource::findOrFail($id);
         $source->name = $request->name;
-        $source->url = $request->url;
+        $source->url = trim($request->url);
         $source->type = $request->type;
         $source->status = $request->has('status') ? 1 : 0;
         $source->save();
