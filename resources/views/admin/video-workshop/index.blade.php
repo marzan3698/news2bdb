@@ -578,20 +578,32 @@
 </div>
 
 <!-- Modal for Video Player -->
-<div class="modal fade" id="videoPlayerModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content" style="background: #0f172a; border-radius: 12px; overflow: hidden; border: none;">
-            <div class="modal-header border-0 py-2 px-3 d-flex justify-content-between align-items-center">
-                <h6 class="modal-title text-white font-weight-bold" id="modalVideoTitle">ভিডিও প্রিভিউ</h6>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="closePlayerModal()">
+<div class="modal fade" id="videoPlayerModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true" style="cursor: pointer;">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document" style="max-width: 860px; margin: 1.75rem auto; cursor: default;">
+        <div class="modal-content" style="background: #0f172a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); position: relative;">
+            
+            <!-- Floating Circular Close Button (Always visible even on small viewports) -->
+            <button type="button" class="btn btn-danger" onclick="closePlayerModal()" style="position: absolute; top: -14px; right: -14px; z-index: 1060; width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.6); font-size: 20px; line-height: 1; font-weight: bold; border: 2px solid #ffffff; cursor: pointer;" title="বন্ধ করুন (Close)">
+                &times;
+            </button>
+
+            <div class="modal-header py-2 px-3 d-flex justify-content-between align-items-center" style="background: #1e293b; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h6 class="modal-title text-white font-weight-bold text-truncate pr-3" id="modalVideoTitle">ভিডিও প্রিভিউ</h6>
+                <button type="button" class="close text-white" aria-label="Close" onclick="closePlayerModal()" style="font-size: 24px; opacity: 0.9; text-shadow: none; cursor: pointer;">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body p-0">
-                <video id="modalVideoElement" controls autoplay style="width: 100%; max-height: 480px; display: block; background: #000;">
+            <div class="modal-body p-0 text-center" style="background: #000; overflow: hidden;">
+                <video id="modalVideoElement" controls autoplay playsinline style="width: 100%; max-height: 65vh; display: block; margin: 0 auto; background: #000;">
                     <source src="" type="video/mp4" id="modalVideoSource">
                     আপনার ব্রাউজারটি ভিডিও প্লেয়ার সমর্থন করে না।
                 </video>
+            </div>
+            <div class="modal-footer py-2 px-3 d-flex justify-content-between align-items-center" style="background: #1e293b; border-top: 1px solid rgba(255,255,255,0.1);">
+                <small class="text-white-50"><i class="mdi mdi-information-outline mr-1"></i> ভিডিও বন্ধ করতে বাইরে ক্লিক করুন বা Esc চাপুন</small>
+                <button type="button" class="btn btn-secondary btn-sm px-3 font-weight-bold" onclick="closePlayerModal()">
+                    <i class="mdi mdi-close mr-1"></i> বন্ধ করুন (Close)
+                </button>
             </div>
         </div>
     </div>
@@ -719,18 +731,54 @@
         const source = document.getElementById('modalVideoSource');
         source.src = videoUrl;
         video.load();
-        video.play();
-        $('#videoPlayerModal').modal('show');
+        video.play().catch(e => console.log('Autoplay prevented:', e));
+
+        $('#videoPlayerModal').modal({
+            backdrop: true,
+            keyboard: true,
+            show: true
+        });
     }
 
     function closePlayerModal() {
         const video = document.getElementById('modalVideoElement');
-        video.pause();
+        if (video) {
+            video.pause();
+        }
         $('#videoPlayerModal').modal('hide');
+
+        // Immediate cleanup of backdrops to ensure page is always accessible
+        setTimeout(() => {
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right', '');
+        }, 150);
     }
 
+    // Direct overlay/backdrop click dismiss: clicking anywhere outside the video dialog closes it immediately
+    $(document).on('click', '#videoPlayerModal', function(e) {
+        if (e.target === this || $(e.target).hasClass('modal-dialog')) {
+            closePlayerModal();
+        }
+    });
+
+    $(document).on('click', '.modal-backdrop', function() {
+        closePlayerModal();
+    });
+
+    // Escape key listener to close video
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            closePlayerModal();
+        }
+    });
+
     $('#videoPlayerModal').on('hidden.bs.modal', function () {
-        document.getElementById('modalVideoElement').pause();
+        const video = document.getElementById('modalVideoElement');
+        if (video) {
+            video.pause();
+        }
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
     });
 
     // Watermark position simulator
