@@ -38,14 +38,18 @@ class ViralNewsController extends Controller
 
         $postedCount = count(array_filter($trends, fn($t) => $t['is_posted']));
         $hotCount = count(array_filter($trends, fn($t) => $t['is_hot']));
+        $politicalCount = count(array_filter($trends, fn($t) => !empty($t['is_political'])));
+        $ytCount = count(array_filter($trends, fn($t) => ($t['source_type'] ?? '') === 'YouTube News TV'));
 
         return response()->json([
-            'success'      => true,
-            'count'        => count($trends),
-            'posted_count' => $postedCount,
-            'hot_count'    => $hotCount,
-            'data'         => $trends,
-            'fetched_at'   => now()->format('h:i:s A'),
+            'success'         => true,
+            'count'           => count($trends),
+            'posted_count'    => $postedCount,
+            'hot_count'       => $hotCount,
+            'political_count' => $politicalCount,
+            'yt_count'        => $ytCount,
+            'data'            => $trends,
+            'fetched_at'      => now()->format('h:i:s A'),
         ]);
     }
 

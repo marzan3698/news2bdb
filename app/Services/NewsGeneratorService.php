@@ -1428,6 +1428,20 @@ class NewsGeneratorService
         }
 
         $article->content = mb_convert_encoding($newsData['content'], 'UTF-8', 'UTF-8');
+
+        // Optional YouTube video embed
+        if (!empty($sourceData['video_id'])) {
+            $vidId = htmlspecialchars($sourceData['video_id'], ENT_QUOTES, 'UTF-8');
+            $sourceTitle = htmlspecialchars($sourceData['name'] ?? 'YouTube', ENT_QUOTES, 'UTF-8');
+            $article->content .= '
+            <div class="my-4 text-center">
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 720px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                    <iframe src="https://www.youtube.com/embed/' . $vidId . '" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
+                </div>
+                <small class="text-muted mt-2 d-block">ভিডিও সূত্র: ' . $sourceTitle . '</small>
+            </div>';
+        }
+
         $article->summary = mb_convert_encoding($newsData['summary'] ?? '', 'UTF-8', 'UTF-8');
         $article->category_id = $categoryId ?: 1;
         $article->user_id = $userId ?? 1;

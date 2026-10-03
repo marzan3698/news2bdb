@@ -20,7 +20,8 @@ class ViralNewsService
 
     /**
      * Get live trending topics and viral news in Bangladesh.
-     * Cached for 10 minutes unless forced refresh.
+     * Combines YouTube top news channels, Google Trends, Google Top Stories, and national leads.
+     * Cached for 8 minutes unless forced refresh.
      */
     public function getLiveTrends(bool $forceRefresh = false): array
     {
@@ -29,22 +30,25 @@ class ViralNewsService
         if (!$forceRefresh && Cache::has($cacheKey)) {
             $cached = Cache::get($cacheKey);
             if (is_array($cached) && !empty($cached)) {
-                // Re-evaluate 'is_posted' against latest articles
                 return $this->attachArticleStatus($cached);
             }
         }
 
         $trends = [];
 
-        // 1. Fetch Google Trends BD (Live Search Trends)
+        // 1. Fetch YouTube Top News Channels (Jamuna, Somoy, Channel 24, Independent, Ekattor)
+        $youtubeNews = $this->fetchYouTubeNewsChannels();
+        $trends = array_merge($trends, $youtubeNews);
+
+        // 2. Fetch Google Trends BD (Live Search Trends)
         $googleTrends = $this->fetchGoogleTrendsBd();
         $trends = array_merge($trends, $googleTrends);
 
-        // 2. Fetch Google News Top Stories BD (Live Algorithmic Top News)
+        // 3. Fetch Google News Top Stories BD (Live Algorithmic Top News)
         $googleNewsTop = $this->fetchGoogleNewsTopStoriesBd();
         $trends = array_merge($trends, $googleNewsTop);
 
-        // 3. Fetch Jagonews24 Lead RSS (National Top Buzz)
+        // 4. Fetch Jagonews24 Lead RSS (National Top Buzz)
         $jagoLeads = $this->fetchJagoNewsLeads();
         $trends = array_merge($trends, $jagoLeads);
 
@@ -54,8 +58,8 @@ class ViralNewsService
         // Check if already posted
         $uniqueTrends = $this->attachArticleStatus($uniqueTrends);
 
-        // Cache for 10 minutes
-        Cache::put($cacheKey, $uniqueTrends, now()->addMinutes(10));
+        // Cache for 8 minutes
+        Cache::put($cacheKey, $uniqueTrends, now()->addMinutes(8));
 
         return $uniqueTrends;
     }
@@ -72,6 +76,109 @@ class ViralNewsService
             }
         }
         return null;
+    }
+
+    /**
+     * Fetch latest breaking video bulletins from top Bangladeshi TV news channels on YouTube.
+     */
+    protected function fetchYouTubeNewsChannels(): array
+    {
+        $items = [];
+        $channels = [
+            'যমুনা টিভি' => ['id' => 'UC2qb5FD5IRnXEP4CBdt7PvA', 'handle' => '@JamunaTVbd'],
+            'সময় টিভি' => ['id' => 'UCxHoBXkY88Tb8z1Ssj6CWsQ', 'handle' => '@somoytvnetupdate'],
+            'চ্যানেল ২৪' => ['id' => 'UCHLqIOMPk20w-6cFgkA90jw', 'handle' => '@channel24digital'],
+            'ইনডিপেনডেন্ট টিভি' => ['id' => 'UCATUkaOHwO9EP_W87zCiPbA', 'handle' => '@IndependentTelevision'],
+            'একাত্তর টিভি' => ['id' => 'UCtqvtAVmad5zywaziN6CbfA', 'handle' => '@EkattorTelevision'],
+            'আরটিভি নিউজ' => ['id' => 'UC2P5Fd5g41Gtdqf0Uzh8Qaw', 'handle' => '@RtvNews'],
+        ];
+
+        foreach ($channels as $channelName => $info) {
+            $rssUrl = "https://www.youtube.com/feeds/videos.xml?channel_id={$info['id']}";
+            try {
+                $response = Http::timeout(8)
+                    ->withHeaders(['User-Agent' => $this->userAgents[0]])
+                    ->get($rssUrl);
+
+                if (!$response->successful()) continue;
+
+                $xml = @simplexml_load_string($response->body(), 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOERROR);
+                if (!$xml || !isset($xml->entry)) continue;
+
+                $count = 0;
+                foreach ($xml->entry as $entry) {
+                    if ($count >= 4) break; // Top 4 latest per channel
+
+                    $title = trim((string)$entry->title);
+                    $link = (string)($entry->link->attributes()->href ?? '');
+                    $publishedStr = (string)$entry->published;
+                    $publishedAt = !empty($publishedStr) ? Carbon::parse($publishedStr) : now();
+
+                    // Extract Video ID
+                    $ytNs = $entry->children('http://www.youtube.com/xml/schemas/2015');
+                    $videoId = (string)($ytNs->videoId ?? '');
+                    if (empty($videoId) && preg_match('/v=([a-zA-Z0-9_-]+)/', $link, $m)) {
+                        $videoId = $m[1];
+                    }
+
+                    // Media NS for thumbnail & description & view count
+                    $media = $entry->children('http://search.yahoo.com/mrss/');
+                    $thumbnail = null;
+                    $description = '';
+                    $views = null;
+
+                    if ($media && isset($media->group)) {
+                        if (isset($media->group->thumbnail)) {
+                            $thumbAttrs = $media->group->thumbnail->attributes();
+                            $thumbnail = (string)($thumbAttrs['url'] ?? '');
+                        }
+                        if (isset($media->group->description)) {
+                            $description = strip_tags((string)$media->group->description);
+                        }
+                        if (isset($media->group->community->statistics)) {
+                            $statAttrs = $media->group->community->statistics->attributes();
+                            $views = (int)($statAttrs['views'] ?? 0);
+                        }
+                    }
+
+                    // Fallback thumbnail
+                    if (empty($thumbnail) && $videoId) {
+                        $thumbnail = "https://i.ytimg.com/vi/{$videoId}/hqdefault.jpg";
+                    }
+
+                    $isPolitical = $this->isPoliticalText($title . ' ' . $description);
+                    $trafficText = $views > 0 ? number_format($views) . ' ভিউ' : 'ইউটিউব ব্রেকিং';
+
+                    $badge = $isPolitical ? '🏛️ রাজনৈতিক ব্রেকিং' : '📺 ইউটিউব নিউজ';
+
+                    $items[] = [
+                        'id'            => 'yt_' . ($videoId ?: md5($title . $link)),
+                        'title'         => $title,
+                        'query'         => $title,
+                        'source_type'   => 'YouTube News TV',
+                        'source_name'   => $channelName,
+                        'source_url'    => $link,
+                        'image_url'     => $thumbnail,
+                        'video_id'      => $videoId,
+                        'embed_url'     => $videoId ? "https://www.youtube.com/embed/{$videoId}" : null,
+                        'snippet'       => $description ? mb_substr($description, 0, 250, 'UTF-8') : "{$channelName}-এর ইউটিউব ভিডিও বুলেটিন: {$title}",
+                        'traffic'       => $trafficText,
+                        'traffic_raw'   => $views ?: 5000,
+                        'is_hot'        => true,
+                        'is_political'  => $isPolitical,
+                        'badge'         => $badge,
+                        'published_at'  => $publishedAt->toISOString(),
+                        'time_ago'      => $publishedAt->locale('bn')->diffForHumans(),
+                        'category_guess'=> $isPolitical ? 'রাজনীতি' : $this->guessCategory($title . ' ' . $description),
+                    ];
+                    $count++;
+                }
+            } catch (\Throwable $e) {
+                Log::warning("ViralNewsService: Failed to fetch YouTube channel {$channelName}: " . $e->getMessage());
+            }
+        }
+
+        return $items;
     }
 
     /**
@@ -133,6 +240,9 @@ class ViralNewsService
                     }
                 }
 
+                $isPolitical = $this->isPoliticalText($headline . ' ' . $query . ' ' . $snippet);
+                $badge = $isPolitical ? '🏛️ রাজনৈতিক ট্রেন্ড' : '🔥 ট্রেন্ডিং সার্চ';
+
                 $items[] = [
                     'id'            => 'gt_' . md5($headline . $query),
                     'title'         => $headline,
@@ -141,14 +251,17 @@ class ViralNewsService
                     'source_name'   => $sourcePortal,
                     'source_url'    => $newsUrl,
                     'image_url'     => $picture ?: null,
+                    'video_id'      => null,
+                    'embed_url'     => null,
                     'snippet'       => $snippet ?: "বাংলাদেশে গুগলে বর্তমানে ট্রেন্ডিং অনুসন্ধান: {$query}",
                     'traffic'       => $traffic . ' অনুসন্ধান',
                     'traffic_raw'   => $this->parseTrafficNumber($traffic),
                     'is_hot'        => true,
-                    'badge'         => '🔥 ট্রেন্ডিং সার্চ',
+                    'is_political'  => $isPolitical,
+                    'badge'         => $badge,
                     'published_at'  => $publishedAt->toISOString(),
                     'time_ago'      => $publishedAt->locale('bn')->diffForHumans(),
-                    'category_guess'=> $this->guessCategory($headline . ' ' . $query),
+                    'category_guess'=> $isPolitical ? 'রাজনীতি' : $this->guessCategory($headline . ' ' . $query),
                 ];
             }
         } catch (\Throwable $e) {
@@ -188,7 +301,6 @@ class ViralNewsService
                 $pubDateStr = (string)($item->pubDate ?? '');
                 $publishedAt = !empty($pubDateStr) ? Carbon::parse($pubDateStr) : now();
 
-                // Google News format: "Headline - Newspaper Name"
                 $headline = $rawTitle;
                 $sourcePortal = 'Google News BD';
 
@@ -201,6 +313,9 @@ class ViralNewsService
                 $link = (string)($item->link ?? '');
                 $description = strip_tags((string)($item->description ?? ''));
 
+                $isPolitical = $this->isPoliticalText($headline . ' ' . $description);
+                $badge = $isPolitical ? '🏛️ রাজনৈতিক টপ স্টোরি' : '🚀 শীর্ষ সংবাদ';
+
                 $items[] = [
                     'id'            => 'gn_' . md5($headline . $link),
                     'title'         => $headline,
@@ -209,14 +324,17 @@ class ViralNewsService
                     'source_name'   => $sourcePortal,
                     'source_url'    => $link,
                     'image_url'     => null,
+                    'video_id'      => null,
+                    'embed_url'     => null,
                     'snippet'       => $description ?: $headline,
                     'traffic'       => 'শীর্ষ সংবাদ',
                     'traffic_raw'   => 5000,
                     'is_hot'        => true,
-                    'badge'         => '🚀 শীর্ষ সংবাদ',
+                    'is_political'  => $isPolitical,
+                    'badge'         => $badge,
                     'published_at'  => $publishedAt->toISOString(),
                     'time_ago'      => $publishedAt->locale('bn')->diffForHumans(),
-                    'category_guess'=> $this->guessCategory($headline),
+                    'category_guess'=> $isPolitical ? 'রাজনীতি' : $this->guessCategory($headline),
                 ];
                 $count++;
             }
@@ -251,7 +369,7 @@ class ViralNewsService
 
             $count = 0;
             foreach ($xml->channel->item as $item) {
-                if ($count >= 8) break;
+                if ($count >= 6) break;
 
                 $headline = trim((string)$item->title);
                 $pubDateStr = (string)($item->pubDate ?? '');
@@ -269,6 +387,9 @@ class ViralNewsService
                     $imageUrl = (string)$item->enclosure['url'];
                 }
 
+                $isPolitical = $this->isPoliticalText($headline . ' ' . $description);
+                $badge = $isPolitical ? '🏛️ রাজনৈতিক লিড' : '⚡ লিড নিউজ';
+
                 $items[] = [
                     'id'            => 'jago_' . md5($headline . $link),
                     'title'         => $headline,
@@ -277,14 +398,17 @@ class ViralNewsService
                     'source_name'   => 'Jagonews24',
                     'source_url'    => $link,
                     'image_url'     => $imageUrl,
+                    'video_id'      => null,
+                    'embed_url'     => null,
                     'snippet'       => $description,
                     'traffic'       => 'আলোচিত লিড',
                     'traffic_raw'   => 3000,
                     'is_hot'        => false,
-                    'badge'         => '⚡ লিড নিউজ',
+                    'is_political'  => $isPolitical,
+                    'badge'         => $badge,
                     'published_at'  => $publishedAt->toISOString(),
                     'time_ago'      => $publishedAt->locale('bn')->diffForHumans(),
-                    'category_guess'=> $this->guessCategory($headline . ' ' . $description),
+                    'category_guess'=> $isPolitical ? 'রাজনীতি' : $this->guessCategory($headline . ' ' . $description),
                 ];
                 $count++;
             }
@@ -377,15 +501,16 @@ class ViralNewsService
             'image_url'        => $trendItem['image_url'] ?? '',
             'name'             => 'ভাইরাল ট্রেন্ড: ' . ($trendItem['source_name'] ?? 'Google Trends'),
             'force_use_source' => true,
+            'video_id'         => $trendItem['video_id'] ?? null,
+            'is_political'     => $trendItem['is_political'] ?? false,
         ];
 
         // Match category
         $categoryIds = [];
-        if (!empty($trendItem['category_guess'])) {
-            $cat = Category::where('name', $trendItem['category_guess'])->first();
-            if ($cat) {
-                $categoryIds = [$cat->id];
-            }
+        $targetCategoryName = $trendItem['is_political'] ? 'রাজনীতি' : ($trendItem['category_guess'] ?? 'জাতীয়');
+        $cat = Category::where('name', $targetCategoryName)->first();
+        if ($cat) {
+            $categoryIds = [$cat->id];
         }
 
         $result = $generator->generate($categoryIds, $userId ?? auth()->id() ?? 1, $customSourceData);
@@ -404,7 +529,7 @@ class ViralNewsService
                         break;
                     }
                 }
-                Cache::put($cacheKey, $cached, now()->addMinutes(10));
+                Cache::put($cacheKey, $cached, now()->addMinutes(8));
             }
         }
 
@@ -412,22 +537,32 @@ class ViralNewsService
     }
 
     /**
+     * Check if a news title or description represents political news in Bangladesh.
+     */
+    public function isPoliticalText(string $text): bool
+    {
+        $text = mb_strtolower($text);
+        return (bool)preg_match('/(রাজনীতি|সরকার|উপদেষ্টা|প্রধান\s*উপদেষ্টা|ইউনুস|ড\.\s*ইউনুস|মন্ত্রী|বিমানমন্ত্রী|স্বরাষ্ট্রমন্ত্রী|আইনমন্ত্রী|মন্ত্রণালয়|বিএনপি|তারেক\s*রহমান|খালেদা\s*জিয়া|মির্জা\s*ফখরুল|জামায়াত|শিবির|আওয়ামী|আওয়ামী|শেখ\s*হাসিনা|হাসিনা|আন্দোলন|বৈষম্যবিরোধী|সমন্বয়ক|সমন্বয়ক|সাদিক\s*কায়েম|হাসনাত|সারজিস|নাহিদ\s*ইসলাম|নির্বাচন|সংসদ|ইসি|আদালত|বিচারপতি|হাইকোর্ট|সুপ্রিম\s*কোর্ট|পুলিশ|র‍্যাব|ডিবি|গ্রেফতার|রিমান্ড|আইনশৃঙ্খলা|সচিবালয়|দলীয়|সমাবেশ|হরতাল|বিক্ষোভ|স্মারকলিপি|বন্দর\s*ইজারা|জ্বালানি\s*সংকট|লোডশেডিং|দলীয়)/u', $text);
+    }
+
+    /**
      * Guess category from title and text.
      */
     protected function guessCategory(string $text): string
     {
-        $text = mb_strtolower($text);
-
-        if (preg_match('/(খেলা|ক্রিকেট|ফুটবল|ম্যাচ|রান|উইকেট|বিশ্বকাপ|মেসি|রোনালদো|গোল|সিরিজ|বিপিএল|আইপিএল|ind vs|ban vs|icc)/u', $text)) {
-            return 'খেলাধুলা';
-        }
-        if (preg_match('/(রাজনীতি|নির্বাচন|দল|বিএনপি|আওয়ামী|জামায়াত|উপদেষ্টা|সরকার|প্রধানমন্ত্রী|রাষ্ট্রপতি|সংসদ|মন্ত্রী|ভোট|আন্দোলন)/u', $text)) {
+        if ($this->isPoliticalText($text)) {
             return 'রাজনীতি';
         }
-        if (preg_match('/(সিনেমা|চলচ্চিত্র|গান|নাটক|অভিনেতা|অভিনেত্রী|নায়ক|নায়িকা|শাকিব|বুবলী|অপু|হলিউড|বলিউড|কনসার্ট|মডেল)/u', $text)) {
+
+        $text = mb_strtolower($text);
+
+        if (preg_match('/(খেলা|ক্রিকেট|ফুটবল|ম্যাচ|রান|উইকেট|বিশ্বকাপ|মেসি|রোনালদো|গোল|সিরিজ|বিপিএল|আইপিএল|ind vs|ban vs|icc|লিটন|শান্ত|সাকিব|রোহিত)/u', $text)) {
+            return 'খেলাধুলা';
+        }
+        if (preg_match('/(সিনেমা|চলচ্চিত্র|গান|নাটক|অভিনেতা|অভিনেত্রী|নায়ক|নায়িকা|শাকিব|বুবলী|অপু|হলিউড|বলিউড|কনসার্ট|মডেল|তারকা)/u', $text)) {
             return 'বিনোদন';
         }
-        if (preg_match('/(বাজেট|ব্যাংক|টাকা|মূল্যস্ফীতি|ডলার|বাজার|দাম|শেয়ারবাজার|অর্থনীতি|রাজস্ব|মুদ্রা)/u', $text)) {
+        if (preg_match('/(বাজেট|ব্যাংক|টাকা|মূল্যস্ফীতি|ডলার|বাজার|দাম|শেয়ারবাজার|অর্থনীতি|রাজস্ব|মুদ্রা|বাণিজ্য)/u', $text)) {
             return 'অর্থনীতি';
         }
         if (preg_match('/(ইসরায়েল|ফিলিস্তিন|গাজা|যুক্তরাষ্ট্র|আমেরিকা|রাশিয়া|ইউক্রেন|চীন|ইরান|ভারত|ট্রাম্প|বাইডেন|জাতিসংঘ|আন্তর্জাতিক)/u', $text)) {

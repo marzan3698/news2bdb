@@ -37,6 +37,22 @@
         padding: 5px 9px;
         border-radius: 6px;
     }
+    .badge-yt {
+        background: linear-gradient(135deg, #e52d27, #b31217);
+        color: #fff;
+        font-weight: 600;
+        font-size: 11px;
+        padding: 5px 9px;
+        border-radius: 6px;
+    }
+    .badge-political {
+        background: linear-gradient(135deg, #8e2de2, #4a00e0);
+        color: #fff;
+        font-weight: 600;
+        font-size: 11px;
+        padding: 5px 9px;
+        border-radius: 6px;
+    }
     .badge-top-story {
         background: linear-gradient(135deg, #2193b0, #6dd5ed);
         color: #fff;
@@ -127,57 +143,70 @@
 
     <!-- Stat Cards & Auto-Viral Toggle -->
     <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left border-danger" style="border-left-width: 4px !important;">
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left border-dark" style="border-left-width: 4px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted text-uppercase mb-1 font-weight-bold" style="font-size: 11px;">মোট সক্রিয় ট্রেন্ড</p>
                         <h3 class="mb-0 font-weight-bold text-dark" id="stat-total-trends">--</h3>
                     </div>
-                    <div class="rounded-circle bg-light p-3 text-danger">
-                        <i class="mdi mdi-fire" style="font-size: 24px;"></i>
+                    <div class="rounded-circle bg-light p-2 text-dark">
+                        <i class="mdi mdi-fire" style="font-size: 22px;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left border-warning" style="border-left-width: 4px !important;">
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left border-danger" style="border-left-width: 4px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted text-uppercase mb-1 font-weight-bold" style="font-size: 11px;">হট সার্চেস (গুগল)</p>
-                        <h3 class="mb-0 font-weight-bold text-warning" id="stat-hot-trends">--</h3>
+                        <p class="text-danger text-uppercase mb-1 font-weight-bold" style="font-size: 11px;">ইউটিউব ব্রেকিং</p>
+                        <h3 class="mb-0 font-weight-bold text-danger" id="stat-yt-trends">--</h3>
                     </div>
-                    <div class="rounded-circle bg-light p-3 text-warning">
-                        <i class="mdi mdi-trending-up" style="font-size: 24px;"></i>
+                    <div class="rounded-circle bg-light p-2 text-danger">
+                        <i class="mdi mdi-youtube" style="font-size: 22px;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-xl-3 col-md-4 col-sm-6 mb-3">
+            <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left" style="border-left-width: 4px !important; border-left-color: #8e2de2 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-uppercase mb-1 font-weight-bold" style="font-size: 11px; color: #8e2de2;">রাজনৈতিক ব্রেকিং</p>
+                        <h3 class="mb-0 font-weight-bold" style="color: #4a00e0;" id="stat-political-trends">--</h3>
+                    </div>
+                    <div class="rounded-circle bg-light p-2" style="color: #8e2de2;">
+                        <i class="mdi mdi-bank" style="font-size: 22px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
             <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left border-success" style="border-left-width: 4px !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted text-uppercase mb-1 font-weight-bold" style="font-size: 11px;">ইতিমধ্যে পোস্ট হয়েছে</p>
+                        <p class="text-muted text-uppercase mb-1 font-weight-bold" style="font-size: 11px;">পোস্ট সম্পন্ন</p>
                         <h3 class="mb-0 font-weight-bold text-success" id="stat-posted-trends">--</h3>
                     </div>
-                    <div class="rounded-circle bg-light p-3 text-success">
-                        <i class="mdi mdi-check-decagram" style="font-size: 24px;"></i>
+                    <div class="rounded-circle bg-light p-2 text-success">
+                        <i class="mdi mdi-check-decagram" style="font-size: 22px;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-xl-3 col-md-8 col-sm-12 mb-3">
             <div class="card trend-card-stat shadow-sm p-3 bg-white h-100 border-left border-primary" style="border-left-width: 4px !important;">
                 <div class="d-flex flex-column justify-content-between h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="text-muted text-uppercase font-weight-bold" style="font-size: 11px;">স্বয়ংক্রিয় ভাইরাল মোড</span>
                         <div class="custom-control custom-switch">
                             <input type="checkbox" class="custom-control-input" id="autoViralSwitch" {{ $viralModeEnabled ? 'checked' : '' }} onchange="toggleAutoViral(this.checked)">
                             <label class="custom-control-label" for="autoViralSwitch" style="cursor: pointer;"></label>
                         </div>
                     </div>
-                    <p class="mb-0 text-muted" style="font-size: 11px; line-height: 1.3;" id="viral-mode-desc">
-                        {{ $viralModeEnabled ? 'সক্রিয়: অটো শিডিউলার সাধারণ সংবাদের বদলে আগে ভাইরাল ট্রেন্ড পোস্ট করবে।' : 'নিষ্ক্রিয়: অটো শিডিউলার সাধারণ রোটেশনে সংবাদ তৈরি করছে।' }}
+                    <p class="mb-0 text-muted" style="font-size: 10.5px; line-height: 1.25;" id="viral-mode-desc">
+                        {{ $viralModeEnabled ? 'সক্রিয়: অটো শিডিউলার সাধারণ সংবাদের বদলে আগে ভাইরাল ও ইউটিউব ট্রেন্ড পোস্ট করবে।' : 'নিষ্ক্রিয়: অটো শিডিউলার সাধারণ রোটেশনে সংবাদ তৈরি করছে।' }}
                     </p>
                 </div>
             </div>
@@ -196,9 +225,11 @@
                 <div class="mr-2 mb-2 mb-md-0">
                     <select id="filter-source" class="form-control form-control-sm" onchange="applyFilters()">
                         <option value="all">সব উৎস (All Sources)</option>
-                        <option value="Google Trends">গুগল ট্রেন্ডস (সার্চ)</option>
-                        <option value="Google Top Stories">গুগল টপ স্টোরিজ</option>
-                        <option value="জাতীয় লিড">জাতীয় লিড নিউজ</option>
+                        <option value="political">🏛️ রাজনৈতিক ব্রেকিং (Political Hot)</option>
+                        <option value="YouTube News TV">📺 ইউটিউব টিভি (যমুনা, সময়, ২৪...)</option>
+                        <option value="Google Trends">🔥 গুগল ট্রেন্ডস (সার্চ)</option>
+                        <option value="Google Top Stories">🚀 গুগল টপ স্টোরিজ</option>
+                        <option value="জাতীয় লিড">⚡ জাতীয় লিড নিউজ</option>
                     </select>
                 </div>
                 <div class="mr-2 mb-2 mb-md-0">
@@ -209,7 +240,7 @@
                     </select>
                 </div>
                 <div>
-                    <input type="text" id="search-box" class="form-control form-control-sm" placeholder="খুঁজুন (যেমন: ইরান, ক্রিকেট)..." onkeyup="applyFilters()">
+                    <input type="text" id="search-box" class="form-control form-control-sm" placeholder="খুঁজুন (যেমন: উপদেষ্টা, বিএনপি, ক্রিকেট)..." onkeyup="applyFilters()">
                 </div>
             </div>
         </div>
@@ -304,7 +335,8 @@ function loadTrends(forceRefresh = false) {
             if (result.success) {
                 allTrendsData = result.data;
                 document.getElementById('stat-total-trends').innerText = result.count;
-                document.getElementById('stat-hot-trends').innerText = result.hot_count;
+                if (document.getElementById('stat-yt-trends')) document.getElementById('stat-yt-trends').innerText = result.yt_count || 0;
+                if (document.getElementById('stat-political-trends')) document.getElementById('stat-political-trends').innerText = result.political_count || 0;
                 document.getElementById('stat-posted-trends').innerText = result.posted_count;
                 document.getElementById('last-updated-text').innerText = `হালনাগাদ: ${result.fetched_at}`;
                 
@@ -331,8 +363,10 @@ function applyFilters() {
     const searchFilter = document.getElementById('search-box').value.trim().toLowerCase();
 
     const filtered = allTrendsData.filter(item => {
-        // Source match
-        if (sourceFilter !== 'all' && item.source_type !== sourceFilter) {
+        // Source & Category match
+        if (sourceFilter === 'political') {
+            if (!item.is_political) return false;
+        } else if (sourceFilter !== 'all' && item.source_type !== sourceFilter) {
             return false;
         }
         // Status match
@@ -374,12 +408,17 @@ function renderTable(items) {
     let html = '';
     items.forEach((item, index) => {
         let badgeHtml = '';
-        if (item.source_type === 'Google Trends') {
-            badgeHtml = `<span class="badge-viral mr-1">${item.badge}</span>`;
+        if (item.is_political) {
+            badgeHtml += `<span class="badge-political mr-1"><i class="mdi mdi-bank mr-1"></i>রাজনীতি</span>`;
+        }
+        if (item.source_type === 'YouTube News TV') {
+            badgeHtml += `<span class="badge-yt mr-1"><i class="mdi mdi-youtube mr-1"></i>${escapeHtml(item.source_name)}</span>`;
+        } else if (item.source_type === 'Google Trends') {
+            badgeHtml += `<span class="badge-viral mr-1">${item.badge}</span>`;
         } else if (item.source_type === 'Google Top Stories') {
-            badgeHtml = `<span class="badge-top-story mr-1">${item.badge}</span>`;
+            badgeHtml += `<span class="badge-top-story mr-1">${item.badge}</span>`;
         } else {
-            badgeHtml = `<span class="badge-lead mr-1">${item.badge}</span>`;
+            badgeHtml += `<span class="badge-lead mr-1">${item.badge}</span>`;
         }
 
         let statusHtml = '';
@@ -409,17 +448,31 @@ function renderTable(items) {
             `;
         }
 
-        let portalLink = item.source_url ? `<a href="${item.source_url}" target="_blank" class="text-muted ml-1" title="মূল উৎস দেখুন"><i class="mdi mdi-open-in-new" style="font-size: 12px;"></i></a>` : '';
+        let portalLink = item.source_url 
+            ? `<a href="${item.source_url}" target="_blank" class="text-muted ml-1" title="মূল উৎস দেখুন"><i class="mdi mdi-open-in-new" style="font-size: 12px;"></i></a>` 
+            : '';
+
+        let thumbHtml = item.image_url 
+            ? `<div style="position: relative; flex-shrink: 0; width: 68px; height: 48px;" class="mr-2">
+                 <img src="${item.image_url}" class="rounded shadow-sm" style="width: 100%; height: 100%; object-fit: cover;" alt="thumb">
+                 ${item.source_type === 'YouTube News TV' ? '<span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.7); color: #ff0000; font-size: 10px; border-radius: 2px; padding: 0 2px;"><i class="mdi mdi-play"></i></span>' : ''}
+               </div>` 
+            : '';
 
         html += `
             <tr id="row-${item.id}">
                 <td class="text-center font-weight-bold text-muted">${index + 1}</td>
                 <td>
-                    <div class="mb-1">
-                        ${badgeHtml}
-                        <span class="trend-title-text">${escapeHtml(item.title)}</span>
+                    <div class="d-flex align-items-start">
+                        ${thumbHtml}
+                        <div>
+                            <div class="mb-1">
+                                ${badgeHtml}
+                                <span class="trend-title-text">${escapeHtml(item.title)}</span>
+                            </div>
+                            <p class="trend-snippet mb-0">${escapeHtml(item.snippet)}</p>
+                        </div>
                     </div>
-                    <p class="trend-snippet mb-0">${escapeHtml(item.snippet)}</p>
                 </td>
                 <td>
                     <div class="font-weight-bold text-dark" style="font-size: 13px;">${escapeHtml(item.source_name)} ${portalLink}</div>
@@ -431,7 +484,7 @@ function renderTable(items) {
                     </span>
                 </td>
                 <td>
-                    <span class="badge badge-info px-2 py-1 font-weight-bold" style="font-size: 11px;">
+                    <span class="badge ${item.is_political ? 'badge-purple text-white' : 'badge-info'} px-2 py-1 font-weight-bold" style="font-size: 11px; ${item.is_political ? 'background-color: #8e2de2;' : ''}">
                         ${escapeHtml(item.category_guess || 'জাতীয়')}
                     </span>
                 </td>
