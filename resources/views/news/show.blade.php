@@ -104,17 +104,51 @@
         position: relative;
         border-radius: 8px;
         overflow: hidden;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         border: 4px solid #f0f3f8;
+        background: #e2e8f0;
+        aspect-ratio: 16/9;
+        width: 100%;
     }
     
     .article-image-container img.article-image {
         width: 100%;
+        height: 100%;
+        object-fit: cover;
         display: block;
         border: none;
         padding: 0;
         margin-bottom: 0;
+    }
+
+    .article-video-container {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 25px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        border: 4px solid #f0f3f8;
+        background: #000;
+        aspect-ratio: 16/9;
+        width: 100%;
+    }
+
+    .article-video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .article-video-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 5;
+        pointer-events: none;
     }
 
     .article-image-watermark {
@@ -280,9 +314,24 @@
         <div class="col-md-7 order-1 order-md-2">
             <h1 class="article-title">{{ $article->title }}</h1>
             
-            @if($article->image_url)
-                <div class="article-image-container">
-                    <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="article-image">
+            {{-- Video or Image shows at the very top (sobar age) --}}
+            @if($article->is_video && $article->video_id)
+                <div class="article-video-container mb-4 shadow-sm">
+                    <iframe 
+                        src="https://www.youtube.com/embed/{{ $article->video_id }}?rel=0&enablejsapi=1" 
+                        title="{{ $article->title }}" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                    </iframe>
+                    <div class="article-video-badge">
+                        <span class="badge bg-danger text-white px-3 py-1 font-weight-bold shadow-sm" style="font-size: 12px; letter-spacing: 0.5px;">
+                            <i class="fab fa-youtube mr-1"></i> ভিডিও প্রতিবেদন {{ $article->source_name ? ' | ' . $article->source_name : '' }}
+                        </span>
+                    </div>
+                </div>
+            @elseif($article->safe_image_url)
+                <div class="article-image-container mb-4 shadow-sm">
+                    <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="article-image" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
                     <div class="article-image-watermark">
                         <span class="watermark-brand"><i class="fas fa-robot mr-1"></i> বিডিবি নিউজ চিত্র</span>
                         @if($article->district)
@@ -302,8 +351,17 @@
                 <strong><i class="fas fa-robot text-warning mr-2"></i> বিশেষ দ্রষ্টব্য:</strong> এই সংবাদটি এবং এর সাথে ব্যবহৃত ছবিটি আর্টিফিশিয়াল ইন্টেলিজেন্স (AI) দ্বারা স্বয়ংক্রিয়ভাবে জেনারেট করা হয়েছে। 
             </div>
 
+            @php
+                $displayContent = $article->content;
+                if ($article->is_video && $article->video_id) {
+                    // Strip the duplicate trailing video iframe box from content since it is already rendered at the top
+                    $displayContent = preg_replace('/<div class="my-4 text-center">.*?<iframe.*?<\/iframe>.*?<\/div>\s*<\/div>/is', '', $displayContent);
+                    $displayContent = preg_replace('/<div[^>]*padding-bottom:\s*56\.25%[^>]*>.*?<\/iframe>.*?<\/div>\s*(?:<small.*?<\/small>)?\s*<\/div>/is', '', $displayContent);
+                }
+            @endphp
+
             <div class="article-content mt-4">
-                {!! $article->content !!}
+                {!! $displayContent !!}
             </div>
         </div>
 
@@ -322,7 +380,14 @@
                 <span class="widget-title">সর্বশেষ সংবাদ</span>
                 <ul>
                     @foreach($latest_articles as $news)
-                        <li><a href="{{ route('news.show', $news->slug) }}">{{ $news->title }}</a></li>
+                        <li>
+                            <a href="{{ route('news.show', $news->slug) }}">
+                                {{ $news->title }}
+                                @if($news->is_video)
+                                    <span class="text-danger ml-1" title="ভিডিও সংবাদ"><i class="fab fa-youtube"></i></span>
+                                @endif
+                            </a>
+                        </li>
                     @endforeach
                 </ul>
             </div>
