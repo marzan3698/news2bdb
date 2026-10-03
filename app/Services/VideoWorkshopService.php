@@ -796,23 +796,55 @@ Dialogue: 0,0:00:00.00,{$assDurStr},BottomHeadline,,0,0,0,,{\\b1\\c&H00FFFF&}শ
 
         $videoUrl = $item->processed_video_url ?: $item->original_video_url;
         
-        // Build video player HTML
-        $videoPlayerHtml = '
-        <div class="video-workshop-player mb-4" style="background:#000; border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-            <video controls autoplay muted playsinline style="width:100%; max-height:560px; display:block;" poster="' . ($item->thumbnail_url ?: '') . '">
-                <source src="' . $videoUrl . '" type="video/mp4">
-                আপনার ব্রাউজারটি ভিডিও প্লেয়ার সমর্থন করে না।
-            </video>
-        </div>';
+        // Build responsive video player HTML based on format
+        if ($item->ai_mode === 'reels') {
+            $videoPlayerHtml = '
+            <div class="video-workshop-reels-player my-4 text-center">
+                <div style="max-width: 440px; margin: 0 auto; background: #000; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); border: 2px solid #e2e8f0;">
+                    <div style="background: linear-gradient(135deg, #8A2387, #E94057, #F27121); color: #fff; padding: 10px 14px; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="mdi mdi-play-circle mr-1"></i> বিডিবি নিউজ এক্সক্লুসিভ রিলস</span>
+                        <span style="background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 4px; font-size: 11px;">৯:১৬ HD</span>
+                    </div>
+                    <video controls autoplay muted playsinline loop style="width: 100%; display: block; aspect-ratio: 9/16; object-fit: cover; background: #000;" poster="' . ($item->thumbnail_url ?: '') . '">
+                        <source src="' . $videoUrl . '" type="video/mp4">
+                        আপনার ব্রাউজারটি ভিডিও প্লেয়ার সমর্থন করে না।
+                    </video>
+                </div>
+            </div>';
+        } else {
+            $videoPlayerHtml = '
+            <div class="video-workshop-player my-4" style="background:#000; border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                <video controls autoplay muted playsinline style="width:100%; max-height:560px; display:block;" poster="' . ($item->thumbnail_url ?: '') . '">
+                    <source src="' . $videoUrl . '" type="video/mp4">
+                    আপনার ব্রাউজারটি ভিডিও প্লেয়ার সমর্থন করে না।
+                </video>
+            </div>';
+        }
+
+        // Determine category_id
+        $category = Category::where('name', $item->category)->first() 
+            ?: Category::where('slug', 'video')->first()
+            ?: Category::first();
+
+        $primaryImage = $item->thumbnail_url;
+        if (!empty($item->extracted_frames) && is_array($item->extracted_frames)) {
+            $primaryImage = asset('storage/' . $item->extracted_frames[0]);
+        }
+
+        $scriptText = $item->narration_script ?: $item->title;
+        $summary = Str::limit(strip_tags($scriptText), 180);
 
         $article = new Article();
         $article->title = $item->title;
         $article->slug = Str::slug($item->title) . '-' . time();
-        $article->category = $item->category ?: 'ভিডিও';
-        $article->content = "<p><strong>বিডিবি নিউজ ভিডিও ডেস্ক:</strong> " . e($item->title) . "</p>" . $videoPlayerHtml . "<p>সত্যের সন্ধানে সার্বক্ষণিক বিডিবি নিউজের সাথে থাকুন।</p>";
-        $article->image_url = $item->thumbnail_url ?: '/admin-assets/images/logo-sm.png';
+        $article->category_id = $category ? $category->id : 1;
+        $article->summary = $summary;
+        $article->content = "<p class='lead'><strong>বিডিবি নিউজ ডেস্ক:</strong> " . e($scriptText) . "</p>" . $videoPlayerHtml . "<p>সর্বশেষ ব্রেকিং নিউজ এবং ভিডিও প্রতিবেদন দেখতে চোখ রাখুন বিডিবি নিউজের সাথেই। সত্যের সন্ধানে সার্বক্ষণিক।</p>";
+        $article->image_url = $primaryImage ?: '/admin-assets/images/logo-sm.png';
         $article->source_name = 'BDB Video Workshop';
         $article->user_id = $item->created_by ?: (auth()->id() ?? 1);
+        $article->is_featured = true;
+        $article->status = 'published';
         $article->save();
 
         $item->update(['article_id' => $article->id]);
