@@ -192,6 +192,15 @@
                                 <span style="color: #fff; font-size: 14px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">News Engine</span>
                             </a>
                         </li>
+                        <li class="mb-2 px-3">
+                            <a href="{{ route('admin.viral-news.index') }}" class="{{ request()->routeIs('admin.viral-news.*') ? 'active' : '' }}" style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: #fff; border-radius: 8px; font-weight: bold; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(255, 75, 43, 0.35); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div class="d-flex align-items-center">
+                                    <i class="mdi mdi-fire mr-2" style="font-size: 18px; color: #fff;"></i>
+                                    <span style="color: #fff; font-size: 14px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">Viral Trends</span>
+                                </div>
+                                <span class="badge badge-light text-danger font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">LIVE</span>
+                            </a>
+                        </li>
                         <li>
                             <a href="javascript: void(0);"><i class="mdi mdi-book-open-page-variant"></i><span>Articles</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
                             <ul class="nav-second-level" aria-expanded="false">

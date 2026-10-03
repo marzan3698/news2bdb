@@ -224,6 +224,27 @@ class NewsGeneratorService
             if ($cat) $categoryName = $cat->name;
         }
 
+        // ── TIER 0: Viral / Trending Mode (if enabled by Admin) ──
+        $viralMode = Setting::where('key', 'viral_mode_enabled')->value('value') === '1';
+        if ($viralMode) {
+            try {
+                $viralService = new ViralNewsService();
+                $topTrend = $viralService->getTopUnpublishedTrend();
+                if ($topTrend && !empty($topTrend['title'])) {
+                    return [
+                        'headline'  => $topTrend['title'],
+                        'content'   => ($topTrend['snippet'] ?? '') . "\n\n(টপিক: " . ($topTrend['query'] ?? '') . ", উৎস: " . ($topTrend['source_name'] ?? '') . ", অনুসন্ধান মাত্রা: " . ($topTrend['traffic'] ?? 'উচ্চ') . ")",
+                        'image_url' => $topTrend['image_url'] ?? null,
+                        'name'      => 'Viral: ' . ($topTrend['source_name'] ?? 'Google Trends'),
+                        'url'       => $topTrend['source_url'] ?? null,
+                        'tier'      => 0,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Viral mode auto fetch failed: ' . $e->getMessage());
+            }
+        }
+
         // ── TIER 1: BBC Bengali RSS ──
         $result = $this->fetchBbcBengali($recentUrls);
         if (!empty($result['headline'])) {
@@ -431,19 +452,19 @@ class NewsGeneratorService
                 }
             }
 
+            $finalUrl = $newsUrl ?? (string)($item->link ?? '');
+            if (!empty($finalUrl) && in_array($finalUrl, $recentUrls)) {
+                return $empty;
+            }
+
             return [
                 'headline'  => $title,
                 'content'   => !empty($description) ? $description : 'Trending topic in Bangladesh: ' . $title,
                 'image_url' => $newsImage,
                 'name'      => 'Google Trends BD',
-                'url'       => $newsUrl ?? (string)($item->link ?? ''),
+                'url'       => $finalUrl,
                 'date'      => null,
             ];
-            
-            if (in_array($result['url'], $recentUrls)) {
-                return $empty;
-            }
-            return $result;
         } catch (\Throwable $e) {
             return $empty;
         }

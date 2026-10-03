@@ -92,6 +92,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/create', [\App\Http\Controllers\Admin\VideoNewsController::class, 'create'])->name('create');
         Route::post('/trigger', [\App\Http\Controllers\Admin\VideoNewsController::class, 'trigger'])->name('trigger');
     });
+
+    // Viral & Trending News Engine
+    Route::prefix('viral-news')->name('viral-news.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ViralNewsController::class, 'index'])->name('index');
+        Route::get('/data', [\App\Http\Controllers\Admin\ViralNewsController::class, 'data'])->name('data');
+        Route::post('/generate', [\App\Http\Controllers\Admin\ViralNewsController::class, 'generate'])->name('generate');
+        Route::post('/toggle-auto', [\App\Http\Controllers\Admin\ViralNewsController::class, 'toggleAuto'])->name('toggle-auto');
+    });
 });
 
 Route::middleware('auth')->group(function () {
