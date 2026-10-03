@@ -97,6 +97,37 @@
         padding: 4px 10px;
         border-radius: 6px;
     }
+    .mode-selector-wrapper {
+        background: #f1f5f9;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 6px;
+        display: flex;
+        gap: 8px;
+    }
+    .mode-tab-btn {
+        flex: 1;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background: transparent;
+        color: #475569;
+        font-weight: 600;
+        font-size: 13.5px;
+        text-align: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .mode-tab-btn:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+    .mode-tab-btn.active {
+        background: #ffffff;
+        color: #E94057;
+        border-color: #E94057;
+        box-shadow: 0 4px 12px rgba(233, 64, 87, 0.15);
+    }
 </style>
 @endpush
 
@@ -189,6 +220,21 @@
                         <input type="hidden" name="duration_seconds" id="durationSecondsInput" value="180">
                         <input type="hidden" name="thumbnail_url" id="thumbnailUrlInput" value="">
                         <input type="hidden" name="channel_name" id="channelNameInput" value="">
+                        <input type="hidden" name="ai_mode" id="aiModeInput" value="reels">
+                        <input type="hidden" name="video_format" id="videoFormatInput" value="vertical">
+
+                        <!-- Mode Switcher -->
+                        <div class="mode-selector-wrapper mb-3">
+                            <button type="button" class="mode-tab-btn active" id="modeReelsBtn" onclick="switchWorkshopMode('reels')">
+                                <i class="mdi mdi-robot mr-1 text-danger"></i> 
+                                <span>🤖 এআই রিলস মোড (কপিরাইট মুক্ত • 9:16 Vertical Reels with AI Voiceover & Ken Burns Zoom)</span>
+                                <span class="badge badge-success ml-2">নিরাপদ (Safe)</span>
+                            </button>
+                            <button type="button" class="mode-tab-btn" id="modeDirectBtn" onclick="switchWorkshopMode('direct')">
+                                <i class="mdi mdi-content-cut mr-1"></i> 
+                                <span>✂️ সাধারণ ট্রিম ও ব্র্যান্ডিং (16:9 Landscape Video)</span>
+                            </button>
+                        </div>
 
                         <!-- Step 1: YouTube URL Input -->
                         <div class="row">
@@ -212,6 +258,34 @@
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold text-dark">ভিডিও টাইটেল / শিরোনাম <span class="text-danger">*</span></label>
                                     <input type="text" name="title" id="videoTitleInput" class="form-control font-weight-bold text-dark" placeholder="ভিডিওর শিরোনাম লোড হবে..." required>
+                                </div>
+
+                                <!-- AI Reels Studio Box (Active by default) -->
+                                <div id="aiReelsStudioBox" class="card mb-3 p-3" style="background: linear-gradient(135deg, #fdf4ff 0%, #f0fdf4 100%); border-radius: 12px; border: 1.5px solid #d8b4fe;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="font-weight-bold text-dark mb-0 d-flex align-items-center">
+                                            <i class="mdi mdi-creation text-primary mr-2" style="font-size: 20px;"></i>
+                                            <span>এআই স্ক্রিপ্ট ও নিজস্ব বাংলা ভয়েসওভার (Copyright-Free AI Reels Studio)</span>
+                                        </h6>
+                                        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-3 shadow-sm" id="generateScriptBtn" onclick="generateAiScriptAction()">
+                                            <i class="mdi mdi-auto-fix mr-1"></i> ✨ এআই দিয়ে স্ক্রিপ্ট তৈরি করুন
+                                        </button>
+                                    </div>
+                                    <div class="alert alert-info py-2 px-3 small mb-2" style="background: rgba(238, 242, 255, 0.85); border: 1px solid #c7d2fe; color: #3730a3; border-radius: 8px;">
+                                        <i class="mdi mdi-shield-check mr-1 text-success font-weight-bold" style="font-size: 16px;"></i>
+                                        <strong>কপিরাইট মুক্ত থাকার নিশ্চয়তা:</strong> সরাসরি ইউটিউব ভিডিও ফেসবুকে দিলে কপিরাইট সমস্যা হয়। এই এআই মোডে মূল ভিডিও থেকে ৫টি গুরুত্বপূর্ণ দৃশ্য স্বয়ংক্রিয়ভাবে আলাদা করে ডায়নামিক জুম-ইন/আউট ট্রানজিশন, বিডিবি নিউজ ব্রেকিং ফ্রেম এবং নিজস্ব বাংলা ভয়েসওভার দিয়ে সম্পূর্ণ ইউনিক ৯:১৬ রিলস তৈরি হয়।
+                                    </div>
+                                    <div class="form-group mb-2">
+                                        <label class="font-weight-bold text-dark small d-flex justify-content-between">
+                                            <span>বাংলা ভয়েসওভার স্ক্রিপ্ট (Voiceover Script):</span>
+                                            <span class="text-muted" id="scriptStatusText"><i class="mdi mdi-information-outline mr-1"></i>টাইটেল লিখে বা তথ্য এনে বাটনে ক্লিক করলে স্ক্রিপ্ট তৈরি হবে</span>
+                                        </label>
+                                        <textarea name="narration_script" id="narrationScriptInput" rows="3" class="form-control" style="font-size: 14px; line-height: 1.6; border-radius: 8px;" placeholder="ইউটিউব ভিডিওর টাইটেল অনুযায়ী এআই স্ক্রিপ্ট স্বয়ংক্রিয়ভাবে তৈরি হবে অথবা আপনি নিজের মতো করে লিখতে পারেন..."></textarea>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                                        <div><i class="mdi mdi-volume-high text-success mr-1"></i>Google TTS বাংলা ভয়েসওভার অডিও তৈরি হবে</div>
+                                        <div><i class="mdi mdi-cellphone-iphone text-primary mr-1"></i>৯:১৬ ভার্টিক্যাল ফরম্যাট (Facebook Reels & YouTube Shorts)</div>
+                                    </div>
                                 </div>
 
                                 <div class="row">
@@ -268,8 +342,8 @@
                             </div>
                         </div>
 
-                        <!-- Step 2: Trimming Studio (Cut Intro & Outro) -->
-                        <div class="card mt-2 p-3" style="background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                        <!-- Step 2: Trimming Studio (Cut Intro & Outro - active in direct mode) -->
+                        <div id="trimmingStudioBox" class="card mt-2 p-3" style="background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1; display: none;">
                             <h6 class="font-weight-bold text-dark mb-2 d-flex align-items-center">
                                 <i class="mdi mdi-content-cut text-danger mr-2" style="font-size: 20px;"></i>
                                 <span>ভিডিও ট্রিম ও অবাঞ্ছিত অংশ ছাঁটাই (Trimming Studio)</span>
@@ -342,7 +416,7 @@
                                     <div class="custom-control custom-checkbox">
                                         <input type="checkbox" name="auto_post_facebook" class="custom-control-input" id="autoPostFbCheck" value="1" {{ $defaultAutoFb ? 'checked' : '' }}>
                                         <label class="custom-control-label font-weight-bold text-primary" for="autoPostFbCheck">
-                                            <i class="mdi mdi-facebook mr-1"></i> প্রসেসিং শেষে ফেসবুকে অটো-পোস্ট করুন
+                                             <i class="mdi mdi-facebook mr-1"></i> প্রসেসিং শেষে ফেসবুকে অটো-পোস্ট করুন
                                         </label>
                                     </div>
                                     <small class="text-muted">টিক দেওয়া থাকলে ভিডিও তৈরি হওয়ামাত্র ফেসবুক পেজে স্বয়ংক্রিয়ভাবে ভিডিও আপলোড হয়ে যাবে।</small>
@@ -353,10 +427,10 @@
                         <!-- Action Submit Button -->
                         <div class="mt-4 d-flex justify-content-between align-items-center">
                             <div class="text-muted small">
-                                <i class="mdi mdi-information-outline mr-1"></i> ক্লিক করলে স্বয়ংক্রিয়ভাবে ব্যাকগ্রাউন্ডে ভিডিও ডাউনলোড, ট্রিম ও ব্র্যান্ডিং এক্সপোর্ট শুরু হবে।
+                                <i class="mdi mdi-information-outline mr-1"></i> ক্লিক করলে স্বয়ংক্রিয়ভাবে ব্যাকগ্রাউন্ডে ভিডিও ডাউনলোড, ফ্রেম সংগ্রহ ও এআই রিলস প্রস্তুত শুরু হবে।
                             </div>
                             <button type="submit" class="btn btn-lg font-weight-bold px-4 text-white" id="submitBtn" style="background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%); border: none; box-shadow: 0 4px 15px rgba(233, 64, 87, 0.4);">
-                                <i class="mdi mdi-play-circle-outline mr-1"></i> ডাউনলোড, ট্রিম ও ব্র্যান্ডিং শুরু করুন
+                                <i class="mdi mdi-robot mr-1"></i> 🚀 কপিরাইট-মুক্ত এআই রিলস তৈরি করুন (9:16 Vertical)
                             </button>
                         </div>
                     </form>
@@ -470,13 +544,22 @@
                                             <span class="badge badge-soft-primary font-weight-bold">{{ $vid->category }}</span>
                                         </td>
                                         <td>
-                                            <div class="small">
-                                                <span class="text-danger font-weight-bold">-{{ $vid->trim_start }}s (ইন্ট্রো)</span> /
-                                                <span class="text-danger font-weight-bold">-{{ $vid->trim_end }}s (আউট্রো)</span>
-                                            </div>
-                                            <small class="text-success font-weight-bold">
-                                                চূড়ান্ত: {{ $vid->formatted_net_duration }}
-                                            </small>
+                                            @if($vid->ai_mode === 'reels')
+                                                <div>
+                                                    <span class="badge badge-success px-2 py-1"><i class="mdi mdi-robot mr-1"></i>৯:১৬ এআই রিলস</span>
+                                                </div>
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="mdi mdi-image-multiple text-primary"></i> ৫টি দৃশ্য + বাংলা ভয়েস
+                                                </small>
+                                            @else
+                                                <div class="small">
+                                                    <span class="text-danger font-weight-bold">-{{ $vid->trim_start }}s (ইন্ট্রো)</span> /
+                                                    <span class="text-danger font-weight-bold">-{{ $vid->trim_end }}s (আউট্রো)</span>
+                                                </div>
+                                                <small class="text-success font-weight-bold">
+                                                    ১৬:৯ ট্রিম ({{ $vid->formatted_net_duration }})
+                                                </small>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($vid->status === 'completed')
@@ -614,6 +697,67 @@
 <script>
     let currentDurationSeconds = 180;
 
+    // Mode Switcher function
+    function switchWorkshopMode(mode) {
+        document.getElementById('aiModeInput').value = mode;
+        if (mode === 'reels') {
+            document.getElementById('modeReelsBtn').classList.add('active');
+            document.getElementById('modeDirectBtn').classList.remove('active');
+            document.getElementById('aiReelsStudioBox').style.display = 'block';
+            document.getElementById('trimmingStudioBox').style.display = 'none';
+            document.getElementById('videoFormatInput').value = 'vertical';
+            document.getElementById('submitBtn').innerHTML = '<i class="mdi mdi-robot mr-1"></i> 🚀 কপিরাইট-মুক্ত এআই রিলস তৈরি করুন (9:16 Vertical)';
+        } else {
+            document.getElementById('modeDirectBtn').classList.add('active');
+            document.getElementById('modeReelsBtn').classList.remove('active');
+            document.getElementById('aiReelsStudioBox').style.display = 'none';
+            document.getElementById('trimmingStudioBox').style.display = 'block';
+            document.getElementById('videoFormatInput').value = 'horizontal';
+            document.getElementById('submitBtn').innerHTML = '<i class="mdi mdi-play-circle-outline mr-1"></i> ডাউনলোড, ট্রিম ও ব্র্যান্ডিং শুরু করুন (16:9)';
+        }
+    }
+
+    // AI Script Generator via AJAX
+    function generateAiScriptAction() {
+        const title = document.getElementById('videoTitleInput').value.trim();
+        if (!title) {
+            alert('অনুগ্রহ করে প্রথমে ইউটিউব লিংক দিয়ে তথ্য আনুন অথবা টাইটেল লিখুন।');
+            document.getElementById('sourceUrlInput').focus();
+            return;
+        }
+
+        const btn = document.getElementById('generateScriptBtn');
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="mdi mdi-loading mdi-spin mr-1"></i> স্ক্রিপ্ট তৈরি হচ্ছে...';
+        document.getElementById('scriptStatusText').innerHTML = '<span class="text-primary font-weight-bold"><i class="mdi mdi-loading mdi-spin mr-1"></i>Gemini AI স্ক্রিপ্ট প্রস্তুত করছে...</span>';
+
+        fetch("{{ route('admin.video-workshop.generate-script') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ title: title })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            if (data.success && data.script) {
+                document.getElementById('narrationScriptInput').value = data.script;
+                document.getElementById('scriptStatusText').innerHTML = '<span class="text-success font-weight-bold"><i class="mdi mdi-check-circle mr-1"></i>স্ক্রিপ্ট প্রস্তুত! (' + (data.estimated_seconds || 20) + 's অডিও)</span>';
+            } else {
+                document.getElementById('scriptStatusText').innerHTML = '<span class="text-danger">স্ক্রিপ্ট তৈরি ব্যর্থ</span>';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            document.getElementById('scriptStatusText').innerHTML = '<span class="text-danger">নেটওয়ার্ক সমস্যা</span>';
+        });
+    }
+
     // Pick bulletin helper
     function pickBulletin(url, title, thumb, channel) {
         document.getElementById('sourceUrlInput').value = url;
@@ -654,9 +798,7 @@
 
             if (data.success && data.data) {
                 const item = data.data;
-                if (!document.getElementById('videoTitleInput').value || document.getElementById('videoTitleInput').value === 'ইউটিউব ভিডিও') {
-                    document.getElementById('videoTitleInput').value = item.title || '';
-                }
+                document.getElementById('videoTitleInput').value = item.title || '';
                 if (item.thumbnail_url) {
                     document.getElementById('previewImage').src = item.thumbnail_url;
                     document.getElementById('thumbnailUrlInput').value = item.thumbnail_url;
@@ -670,6 +812,11 @@
                     document.getElementById('durationSecondsInput').value = item.duration;
                     document.getElementById('durationInfoText').innerText = 'সময়কাল: ' + (item.formatted_duration || formatTime(item.duration));
                     recalculateTrimVisuals();
+                }
+
+                // Auto-generate AI script if in reels mode and script is empty
+                if (document.getElementById('aiModeInput').value === 'reels' && !document.getElementById('narrationScriptInput').value.trim() && item.title) {
+                    generateAiScriptAction();
                 }
             }
         })
@@ -732,6 +879,15 @@
         source.src = videoUrl;
         video.load();
         video.play().catch(e => console.log('Autoplay prevented:', e));
+
+        const modalDialog = document.querySelector('#videoPlayerModal .modal-dialog');
+        if (modalDialog) {
+            if (videoUrl.includes('reels') || videoUrl.includes('reel')) {
+                modalDialog.style.maxWidth = '450px';
+            } else {
+                modalDialog.style.maxWidth = '860px';
+            }
+        }
 
         $('#videoPlayerModal').modal({
             backdrop: true,

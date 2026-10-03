@@ -105,6 +105,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::prefix('video-workshop')->name('video-workshop.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'index'])->name('index');
         Route::post('/fetch-info', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'fetchInfo'])->name('fetch-info');
+        Route::post('/generate-script', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'generateScript'])->name('generate-script');
         Route::post('/store', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'store'])->name('store');
         Route::post('/process/{id}', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'process'])->name('process');
         Route::post('/publish-fb/{id}', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'publishFacebook'])->name('publish-fb');

@@ -92,6 +92,21 @@ class VideoWorkshopController extends Controller
     }
 
     /**
+     * AJAX endpoint to generate Bengali AI voiceover script from title/news
+     */
+    public function generateScript(Request $request)
+    {
+        $request->validate([
+            'title'   => 'required|string|max:300',
+            'context' => 'nullable|string|max:1000',
+        ]);
+
+        $res = $this->workshopService->generateAiScript($request->title, $request->context);
+
+        return response()->json($res);
+    }
+
+    /**
      * Store a new video workshop task and optionally process it immediately.
      */
     public function store(Request $request)
@@ -105,6 +120,9 @@ class VideoWorkshopController extends Controller
             'branding_type'       => 'required|in:watermark,banner,both,none',
             'watermark_position'  => 'required|in:top_right,top_left,bottom_right,bottom_left',
             'branding_text'       => 'nullable|string|max:255',
+            'ai_mode'             => 'nullable|in:reels,direct',
+            'video_format'        => 'nullable|in:vertical,horizontal',
+            'narration_script'    => 'nullable|string',
             'auto_post_facebook'  => 'nullable|boolean',
             'duration_seconds'    => 'nullable|integer',
             'thumbnail_url'       => 'nullable|string',
@@ -127,6 +145,9 @@ class VideoWorkshopController extends Controller
             'branding_type'       => $request->branding_type,
             'watermark_position'  => $request->watermark_position,
             'branding_text'       => $request->branding_text ?: 'BDB NEWS • সত্যের সন্ধানে সার্বক্ষণিক',
+            'ai_mode'             => $request->input('ai_mode', 'reels'),
+            'video_format'        => $request->input('video_format', 'vertical'),
+            'narration_script'    => $request->input('narration_script'),
             'auto_post_facebook'  => $request->boolean('auto_post_facebook'),
             'status'              => 'pending',
             'status_message'      => 'টাস্ক প্রস্তুত করা হয়েছে',

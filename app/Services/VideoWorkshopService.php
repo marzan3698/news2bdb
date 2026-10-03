@@ -140,8 +140,8 @@ class VideoWorkshopService
             : null;
         $ffmpegFlag = $ffmpegDir ? "--ffmpeg-location " . escapeshellarg($ffmpegDir) . " " : "";
 
-        // Standard merge to MP4
-        $cmd = "{$escapedYtdlp} {$ffmpegFlag}--merge-output-format mp4 --no-playlist -o {$escapedOutput} {$escapedUrl} 2>&1";
+        // Standard merge to MP4 (optimized up to 720p for fast download)
+        $cmd = "{$escapedYtdlp} {$ffmpegFlag}-f \"best[height<=720]/bestvideo[height<=720]+bestaudio/best\" --merge-output-format mp4 --no-playlist -o {$escapedOutput} {$escapedUrl} 2>&1";
         
         Log::info("Executing yt-dlp: " . $cmd);
         $output = shell_exec($cmd);
@@ -335,10 +335,14 @@ class VideoWorkshopService
     }
 
     /**
-     * Run full workflow: Download + Process + (Auto Facebook Post).
+     * Run full workflow: Download + Process (Direct or AI Reels) + (Auto Facebook Post).
      */
     public function runFullWorkflow(VideoWorkshopItem $item): array
     {
+        if ($item->ai_mode === 'reels') {
+            return $this->compileAiVerticalReels($item);
+        }
+
         // 1. Download
         $downloadRes = $this->downloadVideo($item);
         if (!$downloadRes['success']) {
@@ -348,6 +352,380 @@ class VideoWorkshopService
         // 2. Process
         $processRes = $this->processVideo($item);
         return $processRes;
+    }
+
+    /**
+     * Generate an AI voiceover news script using Gemini API (with smart Bengali template fallback).
+     */
+    public function generateAiScript(string $title, ?string $context = null): array
+    {
+        $apiKey = Setting::where('key', 'gemini_api_key')->value('value')
+            ?: Setting::where('key', 'ai_gemini_api_key')->value('value')
+            ?: config('services.gemini.key');
+
+        if (!empty($apiKey)) {
+            $prompt = "You are a professional Bengali TV & Social Media News Anchor for 'BDB News' (বিডিবি নিউজ). Write an engaging, crisp, objective Bengali voiceover news report script for a vertical 25-35 second Reel/Short about the following news topic:
+Topic: {$title}
+" . ($context ? "Context details: {$context}\n" : "") . "
+Rules:
+- 4 to 5 short, impactful sentences in standard modern Bengali (প্রমিত চলিত বাংলা).
+- Total duration should be around 20-30 seconds spoken (around 50-70 words).
+- End with: 'বিস্তারিত জানতে বিডিবি নিউজের সাথেই থাকুন।'
+- Return pure plain text only (do NOT include markdown, asterisks, bullet points, english text, or notes). Just the exact spoken words.";
+
+            try {
+                $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+                $res = Http::timeout(20)->post($endpoint, [
+                    'contents' => [
+                        ['parts' => [['text' => $prompt]]]
+                    ]
+                ]);
+
+                if ($res->successful()) {
+                    $json = $res->json();
+                    $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    $cleanScript = trim(preg_replace('/[*#_`\[\]]/u', '', $text));
+                    if (!empty($cleanScript)) {
+                        return [
+                            'success'           => true,
+                            'script'            => $cleanScript,
+                            'source'            => 'gemini',
+                            'estimated_seconds' => max(15, (int)round(mb_strlen($cleanScript, 'UTF-8') / 15)),
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Gemini script generation failed: " . $e->getMessage());
+            }
+        }
+
+        // Smart Bengali news anchor template fallback
+        $cleanTitle = trim(preg_replace('/[*#_`]/u', '', $title));
+        $fallback = "{$cleanTitle} শীর্ষক ঘটনাটি নিয়ে ব্যাপক আলোচনা শুরু হয়েছে। সাম্প্রতিক তথ্যানুযায়ী, এই বিষয়ে সংশ্লিষ্ট মহলে গভীর পর্যবেক্ষণ চলছে। ঘটনাটির প্রভাব সাধারণ মানুষ ও আন্তর্জাতিক পরিমণ্ডলে গুরুত্ব পাচ্ছে। বিস্তারিত ও সর্বশেষ তথ্য জানতে বিডিবি নিউজের সাথেই থাকুন।";
+
+        return [
+            'success'           => true,
+            'script'            => $fallback,
+            'source'            => 'template',
+            'estimated_seconds' => 20,
+        ];
+    }
+
+    /**
+     * Synthesize Bengali speech from text using Google TTS (sentence-chunked).
+     */
+    public function generateVoiceoverAudio(string $bengaliText, string $prefix = 'vo'): array
+    {
+        $voDir = storage_path('app/public/videos/voiceover');
+        if (!file_exists($voDir)) {
+            mkdir($voDir, 0755, true);
+        }
+
+        $filename = 'vo_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $prefix) . '_' . time() . '.mp3';
+        $fullPath = $voDir . DIRECTORY_SEPARATOR . $filename;
+        $relPath = 'videos/voiceover/' . $filename;
+
+        // Split text into punctuation-based sentences
+        $clean = trim(preg_replace('/[\r\n\t]+/', ' ', $bengaliText));
+        $chunks = preg_split('/([।?!]+)/u', $clean, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $mergedChunks = [];
+        $temp = '';
+        foreach ($chunks as $chunk) {
+            if (in_array(trim($chunk), ['।', '?', '!'])) {
+                $temp .= $chunk;
+                $mergedChunks[] = trim($temp);
+                $temp = '';
+            } else {
+                $temp .= ' ' . trim($chunk);
+            }
+        }
+        if (!empty(trim($temp))) {
+            $mergedChunks[] = trim($temp);
+        }
+
+        if (empty($mergedChunks)) {
+            $mergedChunks = [$clean];
+        }
+
+        $fp = fopen($fullPath, 'wb');
+        if (!$fp) {
+            return ['success' => false, 'message' => 'ভয়েসওভার ফাইল তৈরি করা যায়নি।'];
+        }
+
+        foreach ($mergedChunks as $chunk) {
+            $chunk = trim($chunk);
+            if (empty($chunk)) continue;
+
+            $url = "https://translate.google.com/translate_tts?ie=UTF-8&q=" . urlencode($chunk) . "&tl=bn&client=tw-ob";
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+            curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+            $data = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($code === 200 && !empty($data)) {
+                fwrite($fp, $data);
+            }
+        }
+        fclose($fp);
+
+        if (!file_exists($fullPath) || filesize($fullPath) < 1000) {
+            return ['success' => false, 'message' => 'ভয়েসওভার অডিও তৈরি ব্যর্থ হয়েছে।'];
+        }
+
+        // Measure duration
+        $duration = 20.0;
+        $ffmpeg = $this->getFfmpegBinary();
+        if ($ffmpeg) {
+            $cmd = "{$ffmpeg} -i " . escapeshellarg($fullPath) . " 2>&1";
+            $output = shell_exec($cmd);
+            if ($output && preg_match('/Duration:\s*(\d+):(\d+):(\d+\.?\d*)/', $output, $m)) {
+                $duration = (int)$m[1] * 3600 + (int)$m[2] * 60 + (float)$m[3];
+            }
+        }
+
+        return [
+            'success'   => true,
+            'path'      => $relPath,
+            'full_path' => $fullPath,
+            'duration'  => round($duration, 2),
+        ];
+    }
+
+    /**
+     * Extract strategic keyframes from video for Ken Burns animation.
+     */
+    public function extractVideoKeyframes(string $videoPath, int $count = 5): array
+    {
+        $ffmpeg = $this->getFfmpegBinary();
+        if (!$ffmpeg) return [];
+
+        $totalDur = $this->probeVideoDuration($videoPath) ?: 60;
+        $framesDir = storage_path('app/public/videos/frames');
+        if (!file_exists($framesDir)) {
+            mkdir($framesDir, 0755, true);
+        }
+
+        // Space samples between 12% and 85% of duration to skip TV intro/outro bumpers
+        $startPct = 0.12;
+        $endPct = 0.85;
+        $step = ($endPct - $startPct) / max(1, ($count - 1));
+
+        $frames = [];
+        $unique = time() . '_' . rand(100, 999);
+
+        for ($i = 0; $i < $count; $i++) {
+            $pct = $startPct + ($i * $step);
+            $ts = max(1, (int)round($totalDur * $pct));
+            
+            $frameFilename = "frame_{$unique}_{$i}.jpg";
+            $frameFullPath = $framesDir . DIRECTORY_SEPARATOR . $frameFilename;
+            $frameRelPath = "videos/frames/{$frameFilename}";
+
+            $cmd = "{$ffmpeg} -y -ss {$ts} -i " . escapeshellarg($videoPath) . " -frames:v 1 -q:v 2 -update 1 " . escapeshellarg($frameFullPath) . " 2>&1";
+            shell_exec($cmd);
+
+            if (file_exists($frameFullPath) && filesize($frameFullPath) > 1000) {
+                $frames[] = [
+                    'rel_path'  => $frameRelPath,
+                    'full_path' => $frameFullPath,
+                    'timestamp' => $ts,
+                ];
+            }
+        }
+
+        return $frames;
+    }
+
+    /**
+     * Compile AI Vertical Reels (9:16) with Ken Burns motion, Google TTS Bengali voiceover & BDB News branding.
+     */
+    public function compileAiVerticalReels(VideoWorkshopItem $item): array
+    {
+        $item->update([
+            'status'         => 'processing',
+            'status_message' => 'কপিরাইট-মুক্ত এআই রিলস প্রস্তুত হচ্ছে (ডাউনলোড, ফ্রেম এনালাইসিস ও ভয়েসওভার)...',
+            'error_message'  => null,
+        ]);
+
+        $ffmpeg = $this->getFfmpegBinary();
+        if (!$ffmpeg || !$this->isBinaryExecutable($ffmpeg)) {
+            $msg = 'FFmpeg পাওয়া যায়নি। অনুগ্রহ করে Settings থেকে কনফিগার করুন।';
+            $item->update(['status' => 'failed', 'status_message' => 'প্রসেসিং ব্যর্থ', 'error_message' => $msg]);
+            return ['success' => false, 'message' => $msg];
+        }
+
+        // 1. Ensure original video is downloaded
+        if (empty($item->original_video_path) || !file_exists(storage_path('app/public/' . $item->original_video_path))) {
+            $dlRes = $this->downloadVideo($item);
+            if (!$dlRes['success']) {
+                return $dlRes;
+            }
+            $item->refresh();
+        }
+
+        $sourceVideo = storage_path('app/public/' . $item->original_video_path);
+
+        // 2. Ensure narration script
+        $script = trim($item->narration_script ?? '');
+        if (empty($script)) {
+            $scriptRes = $this->generateAiScript($item->title);
+            $script = $scriptRes['script'] ?? $item->title;
+            $item->update(['narration_script' => $script]);
+        }
+
+        // 3. Generate voiceover audio
+        $item->update(['status_message' => 'বাংলা ভয়েসওভার অডিও তৈরি হচ্ছে...']);
+        $voRes = $this->generateVoiceoverAudio($script, 'item_' . $item->id);
+        if (!$voRes['success']) {
+            $item->update(['status' => 'failed', 'status_message' => 'ভয়েসওভার ব্যর্থ', 'error_message' => $voRes['message']]);
+            return $voRes;
+        }
+
+        $voFullPath = $voRes['full_path'];
+        $voDur = $voRes['duration'] ?: 20.0;
+        $item->update([
+            'voiceover_path'   => $voRes['path'],
+            'duration_seconds' => (int)ceil($voDur),
+        ]);
+
+        // 4. Extract strategic keyframes
+        $item->update(['status_message' => 'ভিডিও থেকে গুরুত্বপূর্ণ ৫টি এইচডি দৃশ্য সংগ্রহ করা হচ্ছে...']);
+        $frames = $this->extractVideoKeyframes($sourceVideo, 5);
+        if (empty($frames)) {
+            $msg = 'ভিডিও থেকে ফ্রেম সংগ্রহ করা যায়নি।';
+            $item->update(['status' => 'failed', 'status_message' => 'ফ্রেম সংগ্রহ ব্যর্থ', 'error_message' => $msg]);
+            return ['success' => false, 'message' => $msg];
+        }
+
+        $item->update(['extracted_frames' => array_column($frames, 'rel_path')]);
+
+        // 5. Render Ken Burns vertical zoompan segments
+        $item->update(['status_message' => '৯:১৬ ভার্টিক্যাল জুম-ইন মোশন রেন্ডার হচ্ছে...']);
+        $frameCount = count($frames);
+        $segDur = round($voDur / $frameCount, 2);
+        $fps = 25;
+        $segFrames = (int)ceil($segDur * $fps);
+
+        $processedDir = storage_path('app/public/videos/processed');
+        if (!file_exists($processedDir)) {
+            mkdir($processedDir, 0755, true);
+        }
+
+        $segFiles = [];
+        $uniqueId = $item->id . '_' . time();
+
+        foreach ($frames as $idx => $frameData) {
+            $segFile = $processedDir . DIRECTORY_SEPARATOR . "seg_{$uniqueId}_{$idx}.mp4";
+            
+            // Alternating zoom-in and zoom-out
+            if ($idx % 2 === 0) {
+                $vf = "scale=-1:1280,zoompan=z='min(zoom+0.0012,1.20)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=720x1280:fps={$fps}";
+            } else {
+                $vf = "scale=-1:1280,zoompan=z='max(1.20-0.0012*on,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=720x1280:fps={$fps}";
+            }
+
+            $cmd = "{$ffmpeg} -y -loop 1 -i " . escapeshellarg($frameData['full_path']) . " -vf \"{$vf}\" -t {$segDur} -c:v libx264 -pix_fmt yuv420p -preset ultrafast " . escapeshellarg($segFile) . " 2>&1";
+            shell_exec($cmd);
+
+            if (file_exists($segFile) && filesize($segFile) > 1000) {
+                $segFiles[] = $segFile;
+            }
+        }
+
+        if (empty($segFiles)) {
+            $msg = 'ভার্টিক্যাল সেগমেন্ট রেন্ডার ব্যর্থ হয়েছে।';
+            $item->update(['status' => 'failed', 'status_message' => 'রেন্ডার ব্যর্থ', 'error_message' => $msg]);
+            return ['success' => false, 'message' => $msg];
+        }
+
+        // 6. Create Concat Demuxer List
+        $listFile = $processedDir . DIRECTORY_SEPARATOR . "concat_{$uniqueId}.txt";
+        $listContent = "";
+        foreach ($segFiles as $sf) {
+            $listContent .= "file '" . str_replace('\\', '/', $sf) . "'\n";
+        }
+        file_put_contents($listFile, $listContent);
+
+        // 7. Create ASS Subtitle Overlay
+        $assFile = $processedDir . DIRECTORY_SEPARATOR . "sub_{$uniqueId}.ass";
+        $assDurStr = sprintf('0:%02d:%02d.00', floor($voDur / 60), floor($voDur % 60));
+        $cleanTitle = Str::limit(trim(preg_replace('/[\r\n\t]+/', ' ', $item->title)), 70);
+
+        $assContent = "[Script Info]
+Title: BDB News Vertical Reels
+ScriptType: v4.00+
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+YCbCr Matrix: None
+PlayResX: 720
+PlayResY: 1280
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: TopHeader,Hind Siliguri,32,&H00FFFFFF,&H000000FF,&H001010E0,&HE01010E0,1,0,0,0,100,100,0,0,3,10,0,8,30,30,50,1
+Style: BottomHeadline,Hind Siliguri,30,&H00FFFFFF,&H000000FF,&H00000000,&HD0000000,1,0,0,0,100,100,0,0,3,12,0,2,30,30,70,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,{$assDurStr},TopHeader,,0,0,0,,{\\b1}  ● BDB NEWS | ব্রেকিং নিউজ  
+Dialogue: 0,0:00:00.00,{$assDurStr},BottomHeadline,,0,0,0,,{\\b1\\c&H00FFFF&}শিরোনাম:{\\c&HFFFFFF&} " . addslashes($cleanTitle) . "
+";
+        file_put_contents($assFile, $assContent);
+
+        // 8. Final Concat + Audio Mux + Subtitles Overlay
+        $item->update(['status_message' => 'ফাইনাল এআই রিলস ভিডিও এনকোডিং চলছে...']);
+        $outFilename = "reels_{$uniqueId}.mp4";
+        $finalOutputPath = $processedDir . DIRECTORY_SEPARATOR . $outFilename;
+        $relProcessed = "videos/processed/{$outFilename}";
+
+        // Use relative path for ASS & concat to prevent Windows colon issues
+        $relAss = "storage/app/public/videos/processed/sub_{$uniqueId}.ass";
+        $relList = "storage/app/public/videos/processed/concat_{$uniqueId}.txt";
+
+        $finalCmd = "{$ffmpeg} -y -f concat -safe 0 -i " . escapeshellarg($relList) . " -i " . escapeshellarg($voFullPath) . " -vf \"drawbox=y=ih-140:color=black@0.92:width=iw:height=140:t=fill,drawbox=y=ih-144:color=red:width=iw:height=4:t=fill,ass={$relAss}:fontsdir='public/fonts'\" -c:v libx264 -preset fast -crf 22 -c:a aac -b:a 128k -shortest " . escapeshellarg($finalOutputPath) . " 2>&1";
+
+        Log::info("Executing Final AI Reels Render: " . $finalCmd);
+        $finalOutput = shell_exec($finalCmd);
+
+        // Cleanup temporary files
+        @unlink($listFile);
+        @unlink($assFile);
+        foreach ($segFiles as $sf) {
+            @unlink($sf);
+        }
+
+        if (file_exists($finalOutputPath) && filesize($finalOutputPath) > 10000) {
+            $item->update([
+                'processed_video_path' => $relProcessed,
+                'status'               => 'completed',
+                'status_message'       => 'কপিরাইট-মুক্ত এআই রিলস সফলভাবে তৈরি হয়েছে!',
+                'error_message'        => null,
+            ]);
+
+            // Auto-post to Facebook if requested
+            if ($item->auto_post_facebook) {
+                $this->publishToFacebook($item);
+            }
+
+            return [
+                'success'   => true,
+                'path'      => $relProcessed,
+                'full_path' => $finalOutputPath,
+                'message'   => 'এআই রিলস ভিডিও সফলভাবে প্রস্তুত হয়েছে!',
+            ];
+        }
+
+        $errMsg = 'ফাইনাল রিলস ভিডিও তৈরি ব্যর্থ: ' . Str::limit(trim($finalOutput ?? 'FFmpeg ত্রুটি'), 400);
+        $item->update([
+            'status'         => 'failed',
+            'status_message' => 'এনকোডিং ব্যর্থ',
+            'error_message'  => $errMsg,
+        ]);
+
+        return ['success' => false, 'message' => $errMsg];
     }
 
     /**

@@ -26,6 +26,11 @@ class VideoWorkshopItem extends Model
         'branding_type',
         'watermark_position',
         'branding_text',
+        'ai_mode',
+        'video_format',
+        'narration_script',
+        'voiceover_path',
+        'extracted_frames',
         'original_video_path',
         'processed_video_path',
         'status',
@@ -47,6 +52,7 @@ class VideoWorkshopItem extends Model
         'trim_end' => 'integer',
         'auto_post_facebook' => 'boolean',
         'facebook_posted_at' => 'datetime',
+        'extracted_frames' => 'array',
     ];
 
     public function user()
@@ -79,6 +85,28 @@ class VideoWorkshopItem extends Model
             return null;
         }
         return asset('storage/' . $this->processed_video_path);
+    }
+
+    /**
+     * Get URL for the synthesized voiceover audio
+     */
+    public function getVoiceoverUrlAttribute(): ?string
+    {
+        if (empty($this->voiceover_path)) {
+            return null;
+        }
+        return asset('storage/' . $this->voiceover_path);
+    }
+
+    /**
+     * Get URLs for extracted frames
+     */
+    public function getExtractedFramesUrlsAttribute(): array
+    {
+        if (empty($this->extracted_frames) || !is_array($this->extracted_frames)) {
+            return [];
+        }
+        return array_map(fn($f) => asset('storage/' . $f), $this->extracted_frames);
     }
 
     /**
