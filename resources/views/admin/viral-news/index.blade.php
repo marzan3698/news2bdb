@@ -276,10 +276,6 @@
 <script>
 let allTrendsData = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadTrends(false);
-});
-
 function showToast(text, isError = false) {
     Toastify({
         text: text,
@@ -575,6 +571,21 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.toString().replace(/[&<>"']/g, m => map[m]);
+}
+
+// Expose functions to global window scope so HTML onclick/onchange attributes always find them
+window.loadTrends = loadTrends;
+window.applyFilters = applyFilters;
+window.generateFromItem = generateFromItem;
+window.toggleAutoViral = toggleAutoViral;
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTrends(false);
+    });
+} else {
+    loadTrends(false);
 }
 </script>
 @endpush

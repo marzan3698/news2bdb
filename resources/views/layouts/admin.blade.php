@@ -378,5 +378,8 @@
                 setInterval(fetchLatestLogs, 15000);
             });
         </script>
+
+        @stack('scripts')
+        @yield('scripts')
     </body>
 </html>
