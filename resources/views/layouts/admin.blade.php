@@ -201,6 +201,15 @@
                                 <span class="badge badge-light text-danger font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">LIVE</span>
                             </a>
                         </li>
+                        <li class="mb-2 px-3">
+                            <a href="{{ route('admin.video-workshop.index') }}" class="{{ request()->routeIs('admin.video-workshop.*') ? 'active' : '' }}" style="background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%); color: #fff; border-radius: 8px; font-weight: bold; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(233, 64, 87, 0.35); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div class="d-flex align-items-center">
+                                    <i class="mdi mdi-movie-edit mr-2" style="font-size: 18px; color: #fff;"></i>
+                                    <span style="color: #fff; font-size: 14px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">Video Workshop</span>
+                                </div>
+                                <span class="badge badge-light text-warning font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">NEW</span>
+                            </a>
+                        </li>
                         <li>
                             <a href="javascript: void(0);"><i class="mdi mdi-book-open-page-variant"></i><span>Articles</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
                             <ul class="nav-second-level" aria-expanded="false">
@@ -219,6 +228,17 @@
                                 <li><a href="{{ route('admin.source-to-news.index') }}">All source list</a></li>
                                 <li><a href="{{ route('admin.source-to-news.snews') }}">Add new Snews</a></li>
                                 <li><a href="{{ route('admin.source-to-news.schedule') }}">Schedule Snews</a></li>
+                            </ul>
+                        </li>
+                        <!-- Video Workshop Tool -->
+                        <li class="{{ request()->routeIs('admin.video-workshop.*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                <i class="mdi mdi-movie-open"></i>
+                                <span>Video Workshop Tool</span>
+                            </a>
+                            <ul class="sub-menu {{ request()->routeIs('admin.video-workshop.*') ? 'mm-show' : '' }}" aria-expanded="{{ request()->routeIs('admin.video-workshop.*') ? 'true' : 'false' }}">
+                                <li><a href="{{ route('admin.video-workshop.index') }}">Workshop Studio</a></li>
+                                <li><a href="{{ route('admin.video-workshop.settings') }}">Workshop Settings</a></li>
                             </ul>
                         </li>
                         <!-- AI Video News -->
@@ -252,6 +272,7 @@
                                 <li><a href="{{ route('admin.settings.ai') }}">AI Integration</a></li>
                                 <li><a href="{{ route('admin.settings.auto-scheduler') }}"><i class="mdi mdi-clock-fast mr-1"></i> Auto Post Scheduler</a></li>
                                 <li><a href="{{ route('admin.settings.facebook') }}"><i class="mdi mdi-facebook mr-1"></i> Facebook Settings</a></li>
+                                <li><a href="{{ route('admin.video-workshop.settings') }}"><i class="mdi mdi-movie-edit mr-1"></i> Video Workshop Setup</a></li>
                                 <li><a href="{{ route('admin.settings.video-setup') }}">AI video setup</a></li>
                                 <li><a href="{{ route('admin.ai-sources.index') }}">AI Sources</a></li>
                             </ul>

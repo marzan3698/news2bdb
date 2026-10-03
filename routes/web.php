@@ -100,6 +100,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/generate', [\App\Http\Controllers\Admin\ViralNewsController::class, 'generate'])->name('generate');
         Route::post('/toggle-auto', [\App\Http\Controllers\Admin\ViralNewsController::class, 'toggleAuto'])->name('toggle-auto');
     });
+
+    // Video Workshop Tool
+    Route::prefix('video-workshop')->name('video-workshop.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'index'])->name('index');
+        Route::post('/fetch-info', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'fetchInfo'])->name('fetch-info');
+        Route::post('/store', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'store'])->name('store');
+        Route::post('/process/{id}', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'process'])->name('process');
+        Route::post('/publish-fb/{id}', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'publishFacebook'])->name('publish-fb');
+        Route::post('/create-article/{id}', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'createArticle'])->name('create-article');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'destroy'])->name('destroy');
+        Route::get('/settings', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'settings'])->name('settings');
+        Route::post('/settings', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'saveSettings'])->name('settings.save');
+        Route::get('/diagnostics', [\App\Http\Controllers\Admin\VideoWorkshopController::class, 'diagnostics'])->name('diagnostics');
+    });
 });
 
 Route::middleware('auth')->group(function () {
