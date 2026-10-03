@@ -83,4 +83,73 @@ class Article extends Model
             }
         });
     }
+
+    /**
+     * Extract YouTube video ID if this article has an associated video.
+     */
+    public function getVideoIdAttribute(): ?string
+    {
+        // 1. Try to extract from content iframe src
+        if (!empty($this->content)) {
+            if (preg_match('/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/i', $this->content, $m)) {
+                return $m[1];
+            }
+            if (preg_match('/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i', $this->content, $m)) {
+                return $m[1];
+            }
+        }
+
+        // 2. Try to extract from source_url
+        if (!empty($this->source_url)) {
+            if (preg_match('/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i', $this->source_url, $m)) {
+                return $m[1];
+            }
+        }
+
+        // 3. Try to extract from image_url (e.g., maxresdefault or hqdefault)
+        if (!empty($this->image_url)) {
+            if (preg_match('/i(?:[0-9])?\.ytimg\.com\/vi(?:_webp)?\/([a-zA-Z0-9_-]{11})/i', $this->image_url, $m)) {
+                return $m[1];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if article is a video news.
+     */
+    public function getIsVideoAttribute(): bool
+    {
+        return !empty($this->video_id) || str_contains($this->content ?? '', 'youtube.com/embed');
+    }
+
+    /**
+     * Get YouTube embed URL.
+     */
+    public function getVideoEmbedUrlAttribute(): ?string
+    {
+        $id = $this->video_id;
+        return $id ? "https://www.youtube.com/embed/{$id}" : null;
+    }
+
+    /**
+     * Get a guaranteed valid image URL that works on both local subdirectory and production.
+     */
+    public function getSafeImageUrlAttribute(): string
+    {
+        $url = $this->image_url;
+        if (!empty($url)) {
+            if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+                return $url;
+            }
+            return asset(ltrim($url, '/'));
+        }
+
+        if ($this->video_id) {
+            return "https://i.ytimg.com/vi/{$this->video_id}/maxresdefault.jpg";
+        }
+
+        return asset('images/lead_national.png');
+    }
 }

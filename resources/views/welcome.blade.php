@@ -220,10 +220,21 @@
     line-height: 1.4;
 }
 
-/* Image watermark overlay effects */
+/* Image & Video wrapper styling */
 .lead-news-image-wrapper {
     position: relative;
     overflow: hidden;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background: #e2e8f0;
+    width: 100%;
+}
+.lead-news-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
 }
 .lead-news-image-wrapper::before {
     content: "বিডিবি নিউজ চিত্র";
@@ -242,23 +253,100 @@
     letter-spacing: 0.5px;
 }
 
+.lead-news-video-wrapper {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    margin-bottom: 15px;
+    background: #000;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    width: 100%;
+}
+.lead-news-video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.lead-video-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, #e51d20, #b91c1c);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    z-index: 5;
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.video-indicator-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(229, 29, 32, 0.92);
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    pointer-events: none;
+}
+.video-indicator-badge i {
+    margin-left: 2px;
+}
+
 .category-news-card {
     position: relative;
 }
-.category-news-card::before {
+.category-card-img-wrapper {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    background: #f1f5f9;
+}
+.category-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+.category-news-card:hover .category-card-img {
+    transform: scale(1.04);
+}
+.category-card-img-wrapper::before {
     content: "বিডিবি নিউজ চিত্র";
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: 8px;
+    left: 8px;
     background: rgba(229, 29, 32, 0.95);
     color: white;
     font-size: 10px;
     font-weight: bold;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 3px;
-    z-index: 10;
+    z-index: 5;
     pointer-events: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.category-card-img-wrapper.is-video::before {
+    content: "▶ ভিডিও";
+    background: #e51d20;
 }
 </style>
 @endpush
@@ -271,9 +359,23 @@
                     <div class="col-lg-5 col-md-12">
                         @if($featured_article)
                             <div class="lead-news-card">
-                                <div class="lead-news-image-wrapper">
-                                    <img src="{{ $featured_article->image_url }}" alt="{{ $featured_article->title }}">
-                                </div>
+                                @if($featured_article->is_video && $featured_article->video_id)
+                                    <div class="lead-news-video-wrapper">
+                                        <iframe 
+                                            src="https://www.youtube.com/embed/{{ $featured_article->video_id }}?rel=0&enablejsapi=1" 
+                                            title="{{ $featured_article->title }}" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                            allowfullscreen>
+                                        </iframe>
+                                        <div class="lead-video-badge">
+                                            <i class="fab fa-youtube"></i> ভিডিও সংবাদ
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="lead-news-image-wrapper">
+                                        <img src="{{ $featured_article->safe_image_url }}" alt="{{ $featured_article->title }}" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                    </div>
+                                @endif
                                 <div class="card-body">
                                     <h2 class="lead-news-title">
                                         <a href="{{ route('news.show', $featured_article->slug) }}">{{ $featured_article->title }}</a>
@@ -283,6 +385,9 @@
                                         <span><i class="fas fa-folder text-danger"></i> {{ $featured_article->category->name }}</span>
                                         <span><i class="far fa-clock"></i> {{ $featured_article->created_at->diffForHumans() }}</span>
                                         <span><i class="far fa-eye"></i> {{ $featured_article->views }} বার পঠিত</span>
+                                        @if($featured_article->is_video)
+                                            <span class="text-danger fw-bold ms-2"><i class="fab fa-youtube"></i> ভিডিও প্রতিবেদন</span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -297,8 +402,13 @@
                     <div class="col-lg-4 col-md-7">
                         @foreach($middle_articles as $article)
                             <div class="secondary-news-item">
-                                @if($article->image_url)
-                                    <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="secondary-news-img">
+                                @if($article->safe_image_url)
+                                    <div class="position-relative flex-shrink-0" style="width: 120px; height: 85px; border-radius: 4px; overflow: hidden; background: #f1f5f9;">
+                                        <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="secondary-news-img" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                        @if($article->is_video)
+                                            <span class="video-indicator-badge" title="ভিডিও সংবাদ"><i class="fas fa-play"></i></span>
+                                        @endif
+                                    </div>
                                 @endif
                                 <div>
                                     <h3 class="secondary-news-title">
@@ -307,6 +417,9 @@
                                     <p class="secondary-news-summary">{{ $article->summary }}</p>
                                     <div class="news-meta-info mt-2">
                                         <span><i class="far fa-clock"></i> {{ $article->created_at->diffForHumans() }}</span>
+                                        @if($article->is_video)
+                                            <span class="text-danger fw-bold ms-2"><i class="fab fa-youtube"></i> ভিডিও</span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -323,7 +436,13 @@
                             <div class="pm-corner-body">
                                 @if($pm_corner_lead)
                                     <div class="pm-lead-article">
-                                        <img src="{{ $pm_corner_lead->image_url }}" alt="{{ $pm_corner_lead->title }}" class="pm-lead-img">
+                                        @if($pm_corner_lead->is_video && $pm_corner_lead->video_id)
+                                            <div class="position-relative mb-2" style="aspect-ratio: 16/9; width: 100%; border-radius: 4px; overflow: hidden; background: #000;">
+                                                <iframe src="https://www.youtube.com/embed/{{ $pm_corner_lead->video_id }}?rel=0" style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen></iframe>
+                                            </div>
+                                        @else
+                                            <img src="{{ $pm_corner_lead->safe_image_url }}" alt="{{ $pm_corner_lead->title }}" class="pm-lead-img" onerror="this.onerror=null; this.src='{{ asset('images/pm_visit.png') }}';">
+                                        @endif
                                         <h4 class="pm-lead-title">
                                             <a href="{{ route('news.show', $pm_corner_lead->slug) }}">{{ $pm_corner_lead->title }}</a>
                                         </h4>
@@ -333,7 +452,12 @@
                                 <div class="pm-sub-list">
                                     @foreach($pm_corner_subs as $article)
                                         <div class="pm-sub-item">
-                                            <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="pm-sub-img">
+                                            <div class="position-relative flex-shrink-0" style="width: 70px; height: 50px; border-radius: 4px; overflow: hidden; background: #f1f5f9;">
+                                                <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="pm-sub-img" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                                @if($article->is_video)
+                                                    <span class="video-indicator-badge" style="width: 18px; height: 18px; font-size: 8px;"><i class="fas fa-play"></i></span>
+                                                @endif
+                                            </div>
                                             <h5 class="pm-sub-title">
                                                 <a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a>
                                             </h5>
@@ -359,7 +483,9 @@
                             @forelse($sarabangla_articles as $article)
                                 <div class="col-md-6 mb-3">
                                     <div class="category-news-card h-100">
-                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
+                                        <div class="category-card-img-wrapper {{ $article->is_video ? 'is-video' : '' }}">
+                                            <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="category-card-img" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                        </div>
                                         <div class="category-card-body d-flex flex-column">
                                             <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
                                             <p class="category-card-summary">{{ $article->summary }}</p>
@@ -424,7 +550,9 @@
                             @foreach($politics_articles as $article)
                                 <div class="col-sm-6 mb-3">
                                     <div class="category-news-card">
-                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
+                                        <div class="category-card-img-wrapper {{ $article->is_video ? 'is-video' : '' }}">
+                                            <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="category-card-img" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                        </div>
                                         <div class="category-card-body">
                                             <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
                                             <p class="category-card-summary">{{ $article->summary }}</p>
@@ -445,7 +573,9 @@
                             @foreach($sports_articles as $article)
                                 <div class="col-sm-6 mb-3">
                                     <div class="category-news-card">
-                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
+                                        <div class="category-card-img-wrapper {{ $article->is_video ? 'is-video' : '' }}">
+                                            <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="category-card-img" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                        </div>
                                         <div class="category-card-body">
                                             <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
                                             <p class="category-card-summary">{{ $article->summary }}</p>
@@ -583,7 +713,9 @@
                             @foreach($entertainment_articles as $article)
                                 <div class="col-sm-6 mb-3">
                                     <div class="category-news-card">
-                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
+                                        <div class="category-card-img-wrapper {{ $article->is_video ? 'is-video' : '' }}">
+                                            <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="category-card-img" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                        </div>
                                         <div class="category-card-body">
                                             <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
                                             <p class="category-card-summary">{{ $article->summary }}</p>
@@ -603,7 +735,9 @@
                             @foreach($tech_articles as $article)
                                 <div class="col-sm-6 mb-3">
                                     <div class="category-news-card">
-                                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="category-card-img">
+                                        <div class="category-card-img-wrapper {{ $article->is_video ? 'is-video' : '' }}">
+                                            <img src="{{ $article->safe_image_url }}" alt="{{ $article->title }}" class="category-card-img" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
+                                        </div>
                                         <div class="category-card-body">
                                             <h5 class="category-card-title"><a href="{{ route('news.show', $article->slug) }}">{{ $article->title }}</a></h5>
                                             <p class="category-card-summary">{{ $article->summary }}</p>
@@ -631,7 +765,7 @@
                         <div class="col-lg-3 col-md-6">
                             <a href="{{ route('news.show', $vArt->slug) }}" class="text-decoration-none d-block">
                                 <div class="gallery-item shadow-sm">
-                                    <img src="{{ $vArt->image_url ?: asset('images/lead_national.png') }}" alt="{{ $vArt->title }}">
+                                    <img src="{{ $vArt->safe_image_url }}" alt="{{ $vArt->title }}" onerror="this.onerror=null; this.src='{{ asset('images/lead_national.png') }}';">
                                     <div class="gallery-icon bg-danger text-white">
                                         <i class="fas fa-play" style="font-size: 12px; margin-left: 2px;"></i>
                                     </div>
