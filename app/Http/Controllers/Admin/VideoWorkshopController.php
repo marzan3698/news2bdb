@@ -44,7 +44,7 @@ class VideoWorkshopController extends Controller
         // Defaults from settings
         $defaultTrimStart = (int)(Setting::where('key', 'video_workshop_trim_start')->value('value') ?? 5);
         $defaultTrimEnd = (int)(Setting::where('key', 'video_workshop_trim_end')->value('value') ?? 10);
-        $defaultBrandingType = Setting::where('key', 'video_workshop_branding_type')->value('value') ?? 'both';
+        $defaultBrandingType = Setting::where('key', 'video_workshop_branding_type')->value('value') ?? 'news_frame';
         $defaultAutoFb = Setting::where('key', 'video_workshop_auto_fb')->value('value') === '1';
 
         // Fetch top recent YouTube news bulletins for quick 1-click import
@@ -117,7 +117,7 @@ class VideoWorkshopController extends Controller
             'category'            => 'nullable|string|max:100',
             'trim_start'          => 'required|integer|min:0|max:300',
             'trim_end'            => 'required|integer|min:0|max:300',
-            'branding_type'       => 'required|in:watermark,banner,both,none',
+            'branding_type'       => 'required|in:news_frame,watermark,banner,both,none',
             'watermark_position'  => 'required|in:top_right,top_left,bottom_right,bottom_left',
             'branding_text'       => 'nullable|string|max:255',
             'ai_mode'             => 'nullable|in:reels,direct',
@@ -349,7 +349,7 @@ class VideoWorkshopController extends Controller
             'video_workshop_ytdlp_path'    => 'nullable|string',
             'video_workshop_trim_start'    => 'required|integer|min:0|max:300',
             'video_workshop_trim_end'      => 'required|integer|min:0|max:300',
-            'video_workshop_branding_type' => 'required|in:watermark,banner,both,none',
+            'video_workshop_branding_type' => 'required|in:news_frame,watermark,banner,both,none',
             'video_workshop_watermark_pos' => 'required|in:top_right,top_left,bottom_right,bottom_left',
             'video_workshop_branding_text' => 'nullable|string|max:255',
             'watermark_file'               => 'nullable|file|mimes:png,webp,svg|max:5120',

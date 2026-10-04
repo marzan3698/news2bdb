@@ -156,7 +156,8 @@
                                 <div class="form-group">
                                     <label class="font-weight-bold text-dark">ডিফল্ট ব্র্যান্ডিং স্টাইল</label>
                                     <select name="video_workshop_branding_type" class="form-control">
-                                        <option value="both" {{ $branding_type == 'both' ? 'selected' : '' }}>লোগো ওয়াটারমার্ক + নিচের নিউজ স্ট্র্যাপ (উভয়ই)</option>
+                                        <option value="news_frame" {{ $branding_type == 'news_frame' ? 'selected' : '' }}>📺 ব্রডকাস্ট নিউজ ফ্রেম (উপরের ২০% + নিচের ৩০% + দুই পাশের বর্ডার ও সাবটাইটেল - প্রস্তাবিত)</option>
+                                        <option value="both" {{ $branding_type == 'both' ? 'selected' : '' }}>লোগো ওয়াটারমার্ক + নিচের সাধারণ নিউজ স্ট্র্যাপ (উভয়ই)</option>
                                         <option value="watermark" {{ $branding_type == 'watermark' ? 'selected' : '' }}>শুধু বিডিবি নিউজ লোগো ওয়াটারমার্ক</option>
                                         <option value="banner" {{ $branding_type == 'banner' ? 'selected' : '' }}>শুধু নিচের ব্রেকিং নিউজ স্ট্র্যাপ বার</option>
                                         <option value="none" {{ $branding_type == 'none' ? 'selected' : '' }}>কোনো ব্র্যান্ডিং নয়</option>

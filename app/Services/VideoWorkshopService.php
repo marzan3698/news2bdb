@@ -245,13 +245,39 @@ class VideoWorkshopService
         // Branding configuration
         $watermarkPath = $this->getWatermarkLogoPath();
         $hasWatermark = file_exists($watermarkPath);
-        $brandingType = $item->branding_type ?: 'both'; // watermark, banner, both, none
+        $brandingType = $item->branding_type ?: 'news_frame'; // news_frame, watermark, banner, both, none
 
-        // Build FFmpeg complex filter
+        // Build FFmpeg filter
         $filterParts = [];
         $inputArgs = "-ss {$trimStart} -i " . escapeshellarg($inputPath);
+        $assFile = null;
         
-        if ($hasWatermark && in_array($brandingType, ['watermark', 'both'])) {
+        if ($brandingType === 'news_frame') {
+            // Full TV News Broadcast Frame (Top 20%, Center 50% with Side Borders, Bottom 30% with Lower-Third)
+            $dims = $this->probeVideoDimensions($inputPath) ?: ['width' => 1280, 'height' => 720];
+            $vidW = $dims['width'];
+            $vidH = $dims['height'];
+
+            $uniqueId = $item->id . '_' . time();
+            $assFile = $processedDir . DIRECTORY_SEPARATOR . "sub_{$uniqueId}.ass";
+            $durationForAss = $targetDuration ?? ($totalDuration ?: 60.0);
+            $brandingScript = $item->branding_text ?: 'BDB NEWS • সত্যের সন্ধানে সার্বক্ষণিক';
+
+            $this->buildDynamicAssSubtitles(
+                $assFile,
+                $item->title,
+                $item->category,
+                $brandingScript,
+                (float)$durationForAss,
+                $vidW,
+                $vidH
+            );
+
+            $relAss = "storage/app/public/videos/processed/sub_{$uniqueId}.ass";
+            $vfString = $this->buildNewsBroadcastVf($vidW, $vidH, $relAss);
+            $filterClause = "-vf \"{$vfString}\"";
+            $mapClause = "";
+        } elseif ($hasWatermark && in_array($brandingType, ['watermark', 'both'])) {
             $inputArgs .= " -i " . escapeshellarg($watermarkPath);
             
             // Position coordinate
@@ -275,11 +301,13 @@ class VideoWorkshopService
             $filterParts[] = "[0:v]drawbox=y=ih-55:color=black@0.65:width=iw:height=55:t=fill,drawbox=y=ih-58:color=red:width=iw:height=3:t=fill,drawtext=text='BDB NEWS • সত্যের সন্ধানে সার্বক্ষণিক':fontcolor=white:fontsize=22:x=25:y=h-38[outv]";
         }
 
-        $filterClause = "";
-        $mapClause = "";
-        if (!empty($filterParts)) {
-            $filterClause = "-filter_complex \"" . implode(';', $filterParts) . "\"";
-            $mapClause = "-map \"[outv]\" -map 0:a?";
+        if (empty($filterClause)) {
+            $filterClause = "";
+            $mapClause = "";
+            if (!empty($filterParts)) {
+                $filterClause = "-filter_complex \"" . implode(';', $filterParts) . "\"";
+                $mapClause = "-map \"[outv]\" -map 0:a?";
+            }
         }
 
         // Fast video encoding parameters for web and Facebook compatibility
@@ -890,14 +918,31 @@ Rules:
         $segFiles = [];
         $uniqueId = $item->id . '_' . time();
 
+        $width = 720;
+        $height = 1280;
+        $outputFormatLabel = '9:16 Vertical HD (720x1280)';
+        if ($item->video_format === 'horizontal') {
+            $width = 1280;
+            $height = 720;
+            $outputFormatLabel = '16:9 Landscape HD (1280x720)';
+        }
+
         foreach ($frames as $idx => $frameData) {
             $segFile = $processedDir . DIRECTORY_SEPARATOR . "seg_{$uniqueId}_{$idx}.mp4";
             
-            // Alternating zoom-in and zoom-out
-            if ($idx % 2 === 0) {
-                $vf = "scale=-1:1280,zoompan=z='min(zoom+0.0012,1.20)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=720x1280:fps={$fps}";
+            // Alternating zoom-in and zoom-out with format support
+            if ($width > $height) {
+                if ($idx % 2 === 0) {
+                    $vf = "scale=1280:-1,zoompan=z='min(zoom+0.0012,1.20)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=1280x720:fps={$fps}";
+                } else {
+                    $vf = "scale=1280:-1,zoompan=z='max(1.20-0.0012*on,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=1280x720:fps={$fps}";
+                }
             } else {
-                $vf = "scale=-1:1280,zoompan=z='max(1.20-0.0012*on,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=720x1280:fps={$fps}";
+                if ($idx % 2 === 0) {
+                    $vf = "scale=-1:1280,zoompan=z='min(zoom+0.0012,1.20)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=720x1280:fps={$fps}";
+                } else {
+                    $vf = "scale=-1:1280,zoompan=z='max(1.20-0.0012*on,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={$segFrames}:s=720x1280:fps={$fps}";
+                }
             }
 
             $cmd = "{$ffmpeg} -y -loop 1 -i " . escapeshellarg($frameData['full_path']) . " -vf \"{$vf}\" -t {$segDur} -c:v libx264 -pix_fmt yuv420p -preset ultrafast " . escapeshellarg($segFile) . " 2>&1";
@@ -922,33 +967,19 @@ Rules:
         }
         file_put_contents($listFile, $listContent);
 
-        // ASS Subtitle Overlay
+        // Build Professional TV News Broadcast Frame + Dynamic Spoken Captions (Top 20%, Bottom 30%, Side Pillars)
         $assFile = $processedDir . DIRECTORY_SEPARATOR . "sub_{$uniqueId}.ass";
-        $assDurStr = sprintf('0:%02d:%02d.00', floor($voDur / 60), floor($voDur % 60));
-        $cleanTitle = Str::limit(trim(preg_replace('/[\r\n\t]+/', ' ', $item->title)), 70);
+        $this->buildDynamicAssSubtitles(
+            $assFile,
+            $item->title,
+            $item->category,
+            $script,
+            (float)$voDur,
+            $width,
+            $height
+        );
 
-        $assContent = "[Script Info]
-Title: BDB News Vertical Reels
-ScriptType: v4.00+
-WrapStyle: 2
-ScaledBorderAndShadow: yes
-YCbCr Matrix: None
-PlayResX: 720
-PlayResY: 1280
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: TopHeader,Hind Siliguri,32,&H00FFFFFF,&H000000FF,&H001010E0,&HE01010E0,1,0,0,0,100,100,0,0,3,10,0,8,30,30,50,1
-Style: BottomHeadline,Hind Siliguri,30,&H00FFFFFF,&H000000FF,&H00000000,&HD0000000,1,0,0,0,100,100,0,0,3,12,0,2,30,30,70,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.00,{$assDurStr},TopHeader,,0,0,0,,{\\b1}  ● BDB NEWS | ব্রেকিং নিউজ  
-Dialogue: 0,0:00:00.00,{$assDurStr},BottomHeadline,,0,0,0,,{\\b1\\c&H00FFFF&}শিরোনাম:{\\c&HFFFFFF&} " . addslashes($cleanTitle) . "
-";
-        file_put_contents($assFile, $assContent);
-
-        // Final Concat + Audio Mux + Subtitles Overlay + Foreign Ticker Concealment
+        // Final Concat + Audio Mux + Subtitles Overlay + News Broadcast Frame
         $outFilename = "reels_{$uniqueId}.mp4";
         $finalOutputPath = $processedDir . DIRECTORY_SEPARATOR . $outFilename;
         $relProcessed = "videos/processed/{$outFilename}";
@@ -956,7 +987,9 @@ Dialogue: 0,0:00:00.00,{$assDurStr},BottomHeadline,,0,0,0,,{\\b1\\c&H00FFFF&}শ
         $relAss = "storage/app/public/videos/processed/sub_{$uniqueId}.ass";
         $relList = "storage/app/public/videos/processed/concat_{$uniqueId}.txt";
 
-        $finalCmd = "{$ffmpeg} -y -f concat -safe 0 -i " . escapeshellarg($relList) . " -i " . escapeshellarg($voFullPath) . " -vf \"drawbox=y=ih-140:color=black@0.92:width=iw:height=140:t=fill,drawbox=y=ih-144:color=red:width=iw:height=4:t=fill,ass={$relAss}:fontsdir='public/fonts'\" -c:v libx264 -preset fast -crf 22 -c:a aac -b:a 128k -shortest " . escapeshellarg($finalOutputPath) . " 2>&1";
+        $vfString = $this->buildNewsBroadcastVf($width, $height, $relAss);
+
+        $finalCmd = "{$ffmpeg} -y -f concat -safe 0 -i " . escapeshellarg($relList) . " -i " . escapeshellarg($voFullPath) . " -vf \"{$vfString}\" -c:v libx264 -preset fast -crf 22 -c:a aac -b:a 128k -shortest " . escapeshellarg($finalOutputPath) . " 2>&1";
 
         Log::info("Executing Final AI Reels Render: " . $finalCmd);
         $finalOutput = shell_exec($finalCmd);
@@ -1360,5 +1393,264 @@ Dialogue: 0,0:00:00.00,{$assDurStr},BottomHeadline,,0,0,0,,{\\b1\\c&H00FFFF&}শ
             ],
             'ready' => ($ffmpegOk && $ytdlpOk),
         ];
+    }
+
+    /**
+     * Probe video width and height using FFmpeg.
+     */
+    public function probeVideoDimensions(string $videoPath): ?array
+    {
+        $ffmpeg = $this->getFfmpegBinary();
+        if (!$ffmpeg) return null;
+
+        $cmd = "{$ffmpeg} -i " . escapeshellarg($videoPath) . " 2>&1";
+        $output = shell_exec($cmd);
+
+        if ($output && preg_match('/Video:.*,\s*(\d{3,4})x(\d{3,4})/', $output, $m)) {
+            return [
+                'width'  => (int)$m[1],
+                'height' => (int)$m[2],
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Build FFmpeg complex filter string for TV News Broadcast Frame.
+     * Top 20% Header + Left & Right Pillars + Bottom 30% Lower-Third + ASS Subtitles.
+     */
+    public function buildNewsBroadcastVf(int $width, int $height, string $relAssPath): string
+    {
+        $topH = (int)round($height * 0.20);
+        $bottomH = (int)round($height * 0.30);
+        $middleH = $height - $topH - $bottomH;
+        $bottomY = $height - $bottomH;
+
+        $borderW = $width > 900 ? 32 : 24;
+
+        // Top Frame:
+        // 1. Solid deep navy/obsidian base: 0x070b14@1
+        // 2. Subtle top header bar: 0x0f172a@1 (height 68)
+        // 3. Red channel pill badge: x=25, y=16, w=165, h=38, color=0xDC2626@1
+        // 4. Category pill badge: x=iw-165, y=16, w=140, h=38, color=0x1E293B@1
+        // 5. Dual divider lines at bottom of top frame: red (4px) + gold (2px)
+        $topFilters = [
+            "drawbox=x=0:y=0:w=iw:h={$topH}:color=0x070b14@1:t=fill",
+            "drawbox=x=0:y=0:w=iw:h=68:color=0x0f172a@1:t=fill",
+            "drawbox=x=25:y=16:w=165:h=38:color=0xDC2626@1:t=fill",
+            "drawbox=x=iw-165:y=16:w=140:h=38:color=0x1E293B@1:t=fill",
+            "drawbox=x=0:y=" . ($topH - 4) . ":w=iw:h=4:color=0xDC2626@1:t=fill",
+            "drawbox=x=0:y={$topH}:w=iw:h=2:color=0xF59E0B@1:t=fill",
+        ];
+
+        // Left & Right Pillars:
+        // Framing the center 50% video
+        $pillarY = $topH + 2;
+        $pillarH = $middleH - 4;
+        $pillarFilters = [
+            "drawbox=x=0:y={$pillarY}:w={$borderW}:h={$pillarH}:color=0x070b14@1:t=fill",
+            "drawbox=x=" . ($borderW - 1) . ":y={$pillarY}:w=2:h={$pillarH}:color=0x334155@1:t=fill",
+            "drawbox=x=iw-{$borderW}:y={$pillarY}:w={$borderW}:h={$pillarH}:color=0x070b14@1:t=fill",
+            "drawbox=x=iw-" . ($borderW + 1) . ":y={$pillarY}:w=2:h={$pillarH}:color=0x334155@1:t=fill",
+        ];
+
+        // Bottom Frame:
+        // 1. Solid deep navy/obsidian base: 0x070b14@1 (height 30%)
+        // 2. Dual divider lines at top of bottom frame: gold (2px) + red (4px)
+        // 3. News strap row: x=25, y=bottomY+14, w=iw-50, h=42, slate 0x1E293B@0.95
+        // 4. Red badge on strap: x=25, y=bottomY+14, w=170, h=42, 0xDC2626@1
+        // 5. Caption / Subtitle container: x=25, y=bottomY+68, w=iw-50, h=246, 0x0b1120@0.92 with border 0x334155@0.7
+        // 6. Footer ticker bar: x=0, y=ih-48, w=iw, h=48, 0xDC2626@1
+        $captionBoxY = $bottomY + 68;
+        $captionBoxH = max(110, $bottomH - 138);
+
+        $bottomFilters = [
+            "drawbox=x=0:y={$bottomY}:w=iw:h={$bottomH}:color=0x070b14@1:t=fill",
+            "drawbox=x=0:y=" . ($bottomY - 2) . ":w=iw:h=2:color=0xF59E0B@1:t=fill",
+            "drawbox=x=0:y={$bottomY}:w=iw:h=4:color=0xDC2626@1:t=fill",
+            "drawbox=x=25:y=" . ($bottomY + 14) . ":w=iw-50:h=42:color=0x1E293B@0.95:t=fill",
+            "drawbox=x=25:y=" . ($bottomY + 14) . ":w=170:h=42:color=0xDC2626@1:t=fill",
+            "drawbox=x=25:y={$captionBoxY}:w=iw-50:h={$captionBoxH}:color=0x0b1120@0.92:t=fill",
+            "drawbox=x=25:y={$captionBoxY}:w=iw-50:h={$captionBoxH}:color=0x334155@0.7:t=2",
+            "drawbox=x=0:y=ih-48:w=iw:h=48:color=0xDC2626@1:t=fill",
+        ];
+
+        // Subtitles filter
+        $subFilter = "ass={$relAssPath}:fontsdir='public/fonts'";
+
+        $allFilters = array_merge($topFilters, $pillarFilters, $bottomFilters, [$subFilter]);
+        return implode(',', $allFilters);
+    }
+
+    /**
+     * Build Dynamic ASS Subtitle file synchronized with voiceover duration.
+     * Renders channel badge, headline in top 20%, and spoken text in bottom 30%.
+     */
+    public function buildDynamicAssSubtitles(
+        string $assFilePath,
+        string $title,
+        ?string $category,
+        string $script,
+        float $totalDuration,
+        int $width = 720,
+        int $height = 1280
+    ): string {
+        $topH = (int)round($height * 0.20);
+        $bottomH = (int)round($height * 0.30);
+        $bottomY = $height - $bottomH;
+
+        $logoX = (int)round(25 + 165 / 2);
+        $logoY = (int)round(16 + 38 / 2);
+        $catX = (int)round(($width - 165) + 140 / 2);
+        $catY = (int)round(16 + 38 / 2);
+        $titleX = (int)round($width / 2);
+        $titleY = (int)round(68 + ($topH - 68) / 2);
+
+        $strapBadgeX = (int)round(25 + 170 / 2);
+        $strapBadgeY = (int)round($bottomY + 14 + 42 / 2);
+        $strapTextX = (int)round(25 + 170 + ($width - 50 - 170) / 2);
+        $strapTextY = $strapBadgeY;
+
+        $captionBoxY = $bottomY + 68;
+        $captionBoxH = max(110, $bottomH - 138);
+        $speechX = (int)round($width / 2);
+        $speechY = (int)round($captionBoxY + $captionBoxH / 2);
+
+        $footerX = (int)round($width / 2);
+        $footerY = (int)round($height - 24);
+
+        $totalDurStr = sprintf('0:%02d:%05.2f', floor(($totalDuration % 3600) / 60), fmod($totalDuration, 60));
+
+        // Clean & wrap title
+        $cleanTitle = trim(preg_replace('/[\r\n\t]+/', ' ', $title));
+        $cleanCategory = trim($category ?: 'জাতীয় সংবাদ');
+        $wrappedTitle = $this->wrapBengaliText($cleanTitle, $width > 900 ? 55 : 30);
+
+        // Split spoken script into sentences
+        $cleanScript = trim(preg_replace('/[\r\n\t]+/', ' ', $script));
+        $cleanScript = preg_replace('/\s*([।,!?])\s*/u', '$1 ', $cleanScript);
+        $cleanScript = trim(preg_replace('/\s+/', ' ', $cleanScript));
+
+        $sentences = $this->splitBengaliSentences($cleanScript);
+        if (empty($sentences)) {
+            $sentences = [$cleanTitle];
+        }
+
+        $totalChars = 0;
+        foreach ($sentences as $s) {
+            $totalChars += max(1, mb_strlen($s, 'UTF-8'));
+        }
+
+        $dialogueEvents = '';
+        $currentTime = 0.0;
+        $numSentences = count($sentences);
+
+        foreach ($sentences as $idx => $sentence) {
+            $charLen = mb_strlen($sentence, 'UTF-8');
+            $dur = ($charLen / max(1, $totalChars)) * $totalDuration;
+            if ($dur < 2.0 && $numSentences > 1) {
+                $dur = 2.0;
+            }
+
+            $startTime = $currentTime;
+            $endTime = ($idx === $numSentences - 1) ? $totalDuration : min($totalDuration, $currentTime + $dur);
+            $currentTime = $endTime;
+
+            $startStr = sprintf('0:%02d:%05.2f', floor(($startTime % 3600) / 60), fmod($startTime, 60));
+            $endStr = sprintf('0:%02d:%05.2f', floor(($endTime % 3600) / 60), fmod($endTime, 60));
+
+            $wrappedSentence = $this->wrapBengaliText($sentence, $width > 900 ? 55 : 32);
+            $dialogueEvents .= "Dialogue: 0,{$startStr},{$endStr},SpokenSpeech,,0,0,0,,{\\pos({$speechX},{$speechY})}{$wrappedSentence}\n";
+        }
+
+        $titleFontSize = $width > 900 ? 28 : 34;
+        $speechFontSize = $width > 900 ? 26 : 32;
+
+        $assContent = "[Script Info]
+Title: BDB News Broadcast Frame
+ScriptType: v4.00+
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+PlayResX: {$width}
+PlayResY: {$height}
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: ChannelLogo,Hind Siliguri,22,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,5,20,20,0,1
+Style: TopCategory,Hind Siliguri,20,&H0000FFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,5,20,20,0,1
+Style: TopHeadline,Hind Siliguri,{$titleFontSize},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,1,2,5,30,30,0,1
+Style: StrapRedBadge,Hind Siliguri,22,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,5,20,20,0,1
+Style: StrapDarkText,Hind Siliguri,20,&H00E2E8F0,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,5,20,20,0,1
+Style: SpokenSpeech,Hind Siliguri,{$speechFontSize},&H00FFFFFF,&H000000FF,&H00000000,&HD0000000,1,0,0,0,100,100,0,0,1,2,2,5,35,35,0,1
+Style: FooterTicker,Hind Siliguri,22,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,5,20,20,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,{$totalDurStr},ChannelLogo,,0,0,0,,{\\pos({$logoX},{$logoY})}● BDB NEWS
+Dialogue: 0,0:00:00.00,{$totalDurStr},TopCategory,,0,0,0,,{\\pos({$catX},{$catY})}{$cleanCategory}
+Dialogue: 0,0:00:00.00,{$totalDurStr},TopHeadline,,0,0,0,,{\\pos({$titleX},{$titleY})}{$wrappedTitle}
+Dialogue: 0,0:00:00.00,{$totalDurStr},StrapRedBadge,,0,0,0,,{\\pos({$strapBadgeX},{$strapBadgeY})}⚡ বিশেষ বুলেটিন
+Dialogue: 0,0:00:00.00,{$totalDurStr},StrapDarkText,,0,0,0,,{\\pos({$strapTextX},{$strapTextY})}বিডিবি নিউজ • সত্যের সন্ধানে সার্বক্ষণিক
+{$dialogueEvents}Dialogue: 0,0:00:00.00,{$totalDurStr},FooterTicker,,0,0,0,,{\\pos({$footerX},{$footerY})}www.bdbnews.com • চোখ রাখুন পর্দায় • সবার আগে সঠিক খবর
+";
+
+        file_put_contents($assFilePath, $assContent);
+        return $assFilePath;
+    }
+
+    /**
+     * Wrap Bengali text cleanly on word boundaries.
+     */
+    public function wrapBengaliText(string $text, int $maxCharsPerLine = 32): string
+    {
+        $words = explode(' ', trim($text));
+        $lines = [];
+        $currentLine = '';
+
+        foreach ($words as $word) {
+            if ($currentLine === '') {
+                $currentLine = $word;
+            } elseif (mb_strlen($currentLine . ' ' . $word, 'UTF-8') <= $maxCharsPerLine) {
+                $currentLine .= ' ' . $word;
+            } else {
+                $lines[] = $currentLine;
+                $currentLine = $word;
+            }
+        }
+        if ($currentLine !== '') {
+            $lines[] = $currentLine;
+        }
+
+        return implode('\N', $lines);
+    }
+
+    /**
+     * Split Bengali narration script into natural sentences for timed subtitles.
+     */
+    public function splitBengaliSentences(string $text): array
+    {
+        $clean = trim(preg_replace('/[\r\n\t]+/', ' ', $text));
+        $clean = preg_replace('/\s*([।,!?])\s*/u', '$1 ', $clean);
+        $clean = trim(preg_replace('/\s+/', ' ', $clean));
+
+        $parts = preg_split('/([।?!]+)/u', $clean, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $sentences = [];
+        $temp = '';
+        foreach ($parts as $p) {
+            if (in_array(trim($p), ['।', '?', '!'])) {
+                $temp .= $p;
+                $t = trim($temp);
+                if (!empty($t)) $sentences[] = $t;
+                $temp = '';
+            } else {
+                $temp .= ' ' . trim($p);
+            }
+        }
+        if (!empty(trim($temp))) {
+            $sentences[] = trim($temp);
+        }
+
+        return $sentences;
     }
 }

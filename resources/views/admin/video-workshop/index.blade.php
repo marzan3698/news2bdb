@@ -69,6 +69,178 @@
         background: #0f172a;
     }
 
+    /* Professional TV News Broadcast Frame Mockup Preview */
+    .news-frame-mockup-wrapper {
+        position: relative;
+        width: 100%;
+        max-width: 290px;
+        height: 485px;
+        margin: 0 auto;
+        background: #070b14;
+        border-radius: 14px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.1);
+        border: 2px solid #1e293b;
+    }
+    .mockup-top-zone {
+        height: 20%;
+        background: #070b14;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8px 10px 0;
+        position: relative;
+        z-index: 10;
+    }
+    .mockup-top-header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .mockup-badge-logo {
+        background: #DC2626;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+    }
+    .mockup-badge-cat {
+        background: #1E293B;
+        color: #38BDF8;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    .mockup-headline-box {
+        color: #FFFFFF;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.35;
+        text-align: center;
+        padding: 2px 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .mockup-top-dividers .divider-red, .mockup-bottom-dividers .divider-red {
+        height: 3px;
+        background: #DC2626;
+        width: 100%;
+    }
+    .mockup-top-dividers .divider-gold, .mockup-bottom-dividers .divider-gold {
+        height: 1.5px;
+        background: #F59E0B;
+        width: 100%;
+    }
+    .mockup-center-zone {
+        height: 50%;
+        position: relative;
+        background: #000;
+        overflow: hidden;
+        display: flex;
+    }
+    .mockup-pillar-left {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 12px;
+        background: #070b14;
+        border-right: 1.5px solid #334155;
+        z-index: 5;
+    }
+    .mockup-pillar-right {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 12px;
+        background: #070b14;
+        border-left: 1.5px solid #334155;
+        z-index: 5;
+    }
+    .mockup-video-thumb {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .mockup-bottom-zone {
+        height: 30%;
+        background: #070b14;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        z-index: 10;
+    }
+    .mockup-strap-bar {
+        display: flex;
+        align-items: center;
+        background: #1E293B;
+        margin: 4px 8px 0;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .mockup-strap-pill {
+        background: #DC2626;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        white-space: nowrap;
+    }
+    .mockup-strap-slogan {
+        color: #cbd5e1;
+        font-size: 8.5px;
+        padding-left: 6px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .mockup-caption-box {
+        margin: 4px 8px;
+        background: #0b1120;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 5px 8px;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    .mockup-caption-text {
+        color: #FFFFFF;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+    }
+    .mockup-footer-ticker {
+        background: #DC2626;
+        color: #fff;
+        font-size: 8px;
+        font-weight: 600;
+        padding: 2px 6px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        letter-spacing: 0.3px;
+    }
+
     .bulletin-pill {
         border: 1px solid #e2e8f0;
         border-radius: 10px;
@@ -305,11 +477,12 @@
                                     <div class="col-md-6">
                                         <div class="form-group mb-3">
                                             <label class="font-weight-bold text-dark">ব্র্যান্ডিং স্টাইল</label>
-                                            <select name="branding_type" id="brandingTypeSelect" class="form-control">
-                                                <option value="both" {{ $defaultBrandingType == 'both' ? 'selected' : '' }}>লোগো ওয়াটারমার্ক + নিচের নিউজ স্ট্র্যাপ (উভয়ই - প্রস্তাবিত)</option>
+                                            <select name="branding_type" id="brandingTypeSelect" class="form-control font-weight-bold">
+                                                <option value="news_frame" {{ $defaultBrandingType == 'news_frame' ? 'selected' : '' }}>📺 ব্রডকাস্ট নিউজ ফ্রেম (উপরের ২০% + নিচের ৩০% + দুই পাশের বর্ডার ও সাবটাইটেল - প্রস্তাবিত)</option>
+                                                <option value="both" {{ $defaultBrandingType == 'both' ? 'selected' : '' }}>লোগো ওয়াটারমার্ক + নিচের সাধারণ নিউজ স্ট্র্যাপ (উভয়ই)</option>
                                                 <option value="watermark" {{ $defaultBrandingType == 'watermark' ? 'selected' : '' }}>শুধু বিডিবি নিউজ লোগো ওয়াটারমার্ক</option>
-                                                <option value="banner" {{ $defaultBrandingType == 'banner' ? 'selected' : '' }}>শুধু নিচের ব্রেকিং নিউজ স্ট্র্যাপ বার</option>
-                                                <option value="none">কোনো ব্র্যান্ডিং নয় (শুধু ট্রিম)</option>
+                                                <option value="banner" {{ $defaultBrandingType == 'banner' ? 'selected' : '' }}>শুধু নিচের সাধারণ স্ট্র্যাপ বার</option>
+                                                <option value="none" {{ $defaultBrandingType == 'none' ? 'selected' : '' }}>কোনো ব্র্যান্ডিং নয় (শুধু ট্রিম)</option>
                                             </select>
                                         </div>
                                     </div>
@@ -318,25 +491,67 @@
 
                             <!-- Live Preview Column -->
                             <div class="col-lg-4">
-                                <div class="card bg-light border-0 p-3 text-center" style="border-radius: 12px;">
-                                    <h6 class="font-weight-bold text-muted mb-2 text-left">
-                                        <i class="mdi mdi-play-box-outline mr-1"></i> ভিডিও প্রিভিউ
-                                    </h6>
-                                    <div id="previewContainer" style="position: relative;">
-                                        <img id="previewImage" src="{{ asset('admin-assets/images/bg-1.jpg') }}" alt="Preview" class="video-thumb-preview">
-                                        <!-- Simulated Watermark Overlay -->
-                                        <div id="simulatedWatermark" style="position: absolute; top: 12px; right: 12px; background: rgba(15,23,42,0.85); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center;">
-                                            <span style="color: #ef4444; font-weight: bold; margin-right: 4px;">●</span>
-                                            <span style="color: #fff; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">BDB NEWS</span>
+                                <div class="card border-0 p-3 text-center shadow-sm" style="border-radius: 14px; background: #0f172a; color: #fff;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="font-weight-bold text-white mb-0 text-left small">
+                                            <i class="mdi mdi-television-guide mr-1 text-danger"></i> ব্রডকাস্ট ফ্রেম লাইভ প্রিভিউ
+                                        </h6>
+                                        <span class="badge badge-danger px-2 py-1" style="font-size: 10px; letter-spacing: 0.5px;">🔴 LIVE BROADCAST</span>
+                                    </div>
+
+                                    <!-- Mockup Phone / Screen Frame Container -->
+                                    <div id="newsBroadcastFrameMockup" class="news-frame-mockup-wrapper">
+                                        <!-- Top 20% Broadcast Header Zone -->
+                                        <div class="mockup-top-zone" id="mockupTopZone">
+                                            <div class="mockup-top-header-bar">
+                                                <span class="mockup-badge-logo">● BDB NEWS</span>
+                                                <span class="mockup-badge-cat" id="previewCatBadge">জাতীয় সংবাদ</span>
+                                            </div>
+                                            <div class="mockup-headline-box" id="previewHeadlineBox">
+                                                ভিডিওর মূল শিরোনাম এখানে সুন্দরভাবে দেখা যাবে...
+                                            </div>
+                                            <div class="mockup-top-dividers">
+                                                <div class="divider-red"></div>
+                                                <div class="divider-gold"></div>
+                                            </div>
                                         </div>
-                                        <!-- Simulated Bottom Banner -->
-                                        <div id="simulatedBanner" style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); border-top: 2px solid #ef4444; padding: 4px 8px; text-align: left;">
-                                            <span style="color: #fff; font-size: 10px; font-weight: bold;">BDB NEWS &bull; সত্যের সন্ধানে সার্বক্ষণিক</span>
+
+                                        <!-- Center 50% Video Footage Area with Left/Right Borders -->
+                                        <div class="mockup-center-zone">
+                                            <div class="mockup-pillar-left" id="mockupPillarLeft"></div>
+                                            <img id="previewImage" src="{{ asset('admin-assets/images/bg-1.jpg') }}" alt="Preview" class="mockup-video-thumb">
+                                            <div class="mockup-pillar-right" id="mockupPillarRight"></div>
+                                        </div>
+
+                                        <!-- Bottom 30% Narration & Subtitle Lower-Third Zone -->
+                                        <div class="mockup-bottom-zone" id="mockupBottomZone">
+                                            <div class="mockup-bottom-dividers">
+                                                <div class="divider-gold"></div>
+                                                <div class="divider-red"></div>
+                                            </div>
+                                            <div class="mockup-strap-bar">
+                                                <span class="mockup-strap-pill">⚡ বিশেষ বুলেটিন</span>
+                                                <span class="mockup-strap-slogan">বিডিবি নিউজ • সত্যের সন্ধানে</span>
+                                            </div>
+                                            <div class="mockup-caption-box">
+                                                <div class="mockup-caption-text" id="previewCaptionBox">
+                                                    কথা চলাকালীন ভয়েসওভারের কথাগুলো এখানে স্পষ্ট বড় ফন্টে সাবটাইটেল হিসেবে ভেসে উঠবে...
+                                                </div>
+                                            </div>
+                                            <div class="mockup-footer-ticker">
+                                                <span>🌐 www.bdbnews.com • চোখ রাখুন পর্দায় • সবার আগে সঠিক খবর</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="mt-2 text-left">
-                                        <small class="text-muted d-block" id="channelInfoText">চ্যানেল: তথ্য নেই</small>
-                                        <small class="text-muted d-block" id="durationInfoText">সময়কাল: --:--</small>
+
+                                    <div class="mt-2 text-left small text-white-50">
+                                        <div class="d-flex justify-content-between">
+                                            <span id="channelInfoText">চ্যানেল: YouTube</span>
+                                            <span id="durationInfoText">সময়কাল: --:--</span>
+                                        </div>
+                                        <div class="alert alert-dark mt-2 py-1 px-2 text-center" style="font-size: 11px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.15); border-radius: 6px; color: #cbd5e1;">
+                                            <i class="mdi mdi-shield-check text-success mr-1"></i> মূল ফুটেজের উপরের ২০% ও নিচের ৩০% ঢেকে আমাদের ফ্রেমেই আসল খবর ও সাবটাইটেল উপস্থাপিত হবে।
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -910,6 +1125,8 @@
             if (data.success && data.script) {
                 document.getElementById('narrationScriptInput').value = data.script;
                 document.getElementById('scriptStatusText').innerHTML = '<span class="text-success font-weight-bold"><i class="mdi mdi-check-circle mr-1"></i>স্ক্রিপ্ট প্রস্তুত! (' + (data.estimated_seconds || 20) + 's অডিও)</span>';
+                const cb = document.getElementById('previewCaptionBox');
+                if (cb) cb.innerText = data.script;
             } else {
                 document.getElementById('scriptStatusText').innerHTML = '<span class="text-danger">স্ক্রিপ্ট তৈরি ব্যর্থ</span>';
             }
@@ -929,6 +1146,9 @@
         document.getElementById('channelNameInput').value = channel;
         document.getElementById('previewImage').src = thumb;
         document.getElementById('channelInfoText').innerText = 'চ্যানেল: ' + channel;
+
+        const hb = document.getElementById('previewHeadlineBox');
+        if (hb) hb.innerText = title;
 
         // Auto trigger fetch for accurate duration
         fetchVideoInfo(url);
@@ -962,6 +1182,9 @@
             if (data.success && data.data) {
                 const item = data.data;
                 document.getElementById('videoTitleInput').value = item.title || '';
+                const hb = document.getElementById('previewHeadlineBox');
+                if (hb && item.title) hb.innerText = item.title;
+
                 if (item.thumbnail_url) {
                     document.getElementById('previewImage').src = item.thumbnail_url;
                     document.getElementById('thumbnailUrlInput').value = item.thumbnail_url;
@@ -1120,25 +1343,63 @@
         }
     });
 
-    // Branding type simulator
-    document.getElementById('brandingTypeSelect').addEventListener('change', function() {
-        const simWatermark = document.getElementById('simulatedWatermark');
-        const simBanner = document.getElementById('simulatedBanner');
+    // Branding type selector handler
+    const brandingSelect = document.getElementById('brandingTypeSelect');
+    if (brandingSelect) {
+        brandingSelect.addEventListener('change', function() {
+            const mockup = document.getElementById('newsBroadcastFrameMockup');
+            const topZone = document.getElementById('mockupTopZone');
+            const bottomZone = document.getElementById('mockupBottomZone');
+            const pillarL = document.getElementById('mockupPillarLeft');
+            const pillarR = document.getElementById('mockupPillarRight');
 
-        if (this.value === 'both') {
-            simWatermark.style.display = 'flex';
-            simBanner.style.display = 'block';
-        } else if (this.value === 'watermark') {
-            simWatermark.style.display = 'flex';
-            simBanner.style.display = 'none';
-        } else if (this.value === 'banner') {
-            simWatermark.style.display = 'none';
-            simBanner.style.display = 'block';
-        } else {
-            simWatermark.style.display = 'none';
-            simBanner.style.display = 'none';
-        }
-    });
+            if (this.value === 'news_frame') {
+                if (topZone) topZone.style.display = 'flex';
+                if (bottomZone) bottomZone.style.display = 'flex';
+                if (pillarL) pillarL.style.display = 'block';
+                if (pillarR) pillarR.style.display = 'block';
+            } else if (this.value === 'none') {
+                if (topZone) topZone.style.display = 'none';
+                if (bottomZone) bottomZone.style.display = 'none';
+                if (pillarL) pillarL.style.display = 'none';
+                if (pillarR) pillarR.style.display = 'none';
+            } else {
+                if (topZone) topZone.style.display = (this.value === 'watermark' || this.value === 'both') ? 'flex' : 'none';
+                if (bottomZone) bottomZone.style.display = (this.value === 'banner' || this.value === 'both') ? 'flex' : 'none';
+                if (pillarL) pillarL.style.display = 'none';
+                if (pillarR) pillarR.style.display = 'none';
+            }
+        });
+    }
+
+    // Live update preview headline when title changes
+    const titleInput = document.getElementById('videoTitleInput');
+    if (titleInput) {
+        titleInput.addEventListener('input', function() {
+            const val = this.value.trim() || 'ভিডিওর মূল শিরোনাম এখানে সুন্দরভাবে দেখা যাবে...';
+            const hb = document.getElementById('previewHeadlineBox');
+            if (hb) hb.innerText = val;
+        });
+    }
+
+    // Live update preview caption when narration script changes
+    const scriptInput = document.getElementById('narrationScriptInput');
+    if (scriptInput) {
+        scriptInput.addEventListener('input', function() {
+            const val = this.value.trim() || 'কথা চলাকালীন ভয়েসওভারের কথাগুলো এখানে স্পষ্ট বড় ফন্টে সাবটাইটেল হিসেবে ভেসে উঠবে...';
+            const cb = document.getElementById('previewCaptionBox');
+            if (cb) cb.innerText = val;
+        });
+    }
+
+    // Live update category badge
+    const catSelect = document.querySelector('select[name="category"]');
+    if (catSelect) {
+        catSelect.addEventListener('change', function() {
+            const pb = document.getElementById('previewCatBadge');
+            if (pb) pb.innerText = this.value + ' সংবাদ';
+        });
+    }
 
     // Initialize visuals on page load
     recalculateTrimVisuals();
