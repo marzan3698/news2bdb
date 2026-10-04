@@ -353,6 +353,11 @@
 
             @php
                 $displayContent = $article->content;
+                $displayContent = preg_replace(
+                    '/https?:\/\/(?:localhost(?:\/bdbnews\/public)?|127\.0\.0\.1:8000)\/storage\//',
+                    asset('storage') . '/',
+                    $displayContent
+                );
                 if ($article->is_video && $article->video_id) {
                     // Strip the duplicate trailing video iframe box from content since it is already rendered at the top
                     $displayContent = preg_replace('/<div class="my-4 text-center">.*?<iframe.*?<\/iframe>.*?<\/div>\s*<\/div>/is', '', $displayContent);

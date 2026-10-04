@@ -123,6 +123,7 @@ class VideoWorkshopController extends Controller
             'ai_mode'             => 'nullable|in:reels,direct',
             'video_format'        => 'nullable|in:vertical,horizontal',
             'narration_script'    => 'nullable|string',
+            'voice_tone'          => 'nullable|string|in:bn-BD-PradeepNeural,bn-BD-NabanitaNeural,bn-IN-BashkarNeural,bn-IN-TanishaaNeural',
             'auto_post_facebook'  => 'nullable|boolean',
             'duration_seconds'    => 'nullable|integer',
             'thumbnail_url'       => 'nullable|string',
@@ -148,23 +149,25 @@ class VideoWorkshopController extends Controller
             'ai_mode'             => $request->input('ai_mode', 'reels'),
             'video_format'        => $request->input('video_format', 'vertical'),
             'narration_script'    => $request->input('narration_script'),
+            'voice_tone'          => $request->input('voice_tone', 'bn-BD-PradeepNeural'),
             'auto_post_facebook'  => $request->boolean('auto_post_facebook'),
             'status'              => 'pending',
             'status_message'      => 'টাস্ক প্রস্তুত করা হয়েছে',
             'created_by'          => auth()->id(),
         ]);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'item_id' => $item->id,
+                'message' => 'ভিডিও টাস্ক প্রস্তুত হয়েছে। প্রসেসিং শুরু হচ্ছে...',
+                'item'    => $item,
+            ]);
+        }
+
         if ($request->boolean('run_immediately', true)) {
             // Execute download & process
             $res = $this->workshopService->runFullWorkflow($item);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => $res['success'],
-                    'message' => $res['message'] ?? $item->status_message,
-                    'item'    => $item->fresh(),
-                ]);
-            }
 
             if ($res['success']) {
                 return redirect()->route('admin.video-workshop.index')
@@ -175,15 +178,67 @@ class VideoWorkshopController extends Controller
             }
         }
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'ভিডিও টাস্ক সফলভাবে তৈরি হয়েছে।',
-                'item'    => $item,
-            ]);
+        return redirect()->route('admin.video-workshop.index')->with('success', 'ভিডিও টাস্ক সফলভাবে যুক্ত করা হয়েছে।');
+    }
+
+    /**
+     * Get real-time progress, multi-agent stage details and percent for video generation.
+     */
+    public function status($id)
+    {
+        $item = VideoWorkshopItem::findOrFail($id);
+        
+        $percent = 5;
+        $agentName = 'টাস্ক ইনিশিয়ালাইজেশন';
+        $stage = 'init';
+
+        if ($item->status === 'downloading') {
+            $percent = 25;
+            $agentName = 'ইউটিউব ভিডিও ও কি-ফ্রেম সংগ্রাহক';
+            $stage = 'download';
+        } elseif ($item->status === 'processing') {
+            $msg = $item->status_message ?? '';
+            if (str_contains($msg, '১ম স্তর') || str_contains($msg, 'বিশ্লেষণ') || str_contains($msg, 'ভিশন') || str_contains($msg, 'ফ্রেম')) {
+                $percent = 45;
+                $agentName = 'এজেন্ট ১: জেমিনি এআই ভিশন ও ফ্যাক্ট ইনভেস্টিগেটর';
+                $stage = 'vision';
+            } elseif (str_contains($msg, '২য় স্তর') || str_contains($msg, 'স্ক্রিপ্ট') || str_contains($msg, 'ভয়েসওভার')) {
+                $percent = 70;
+                $agentName = 'এজেন্ট ২ ও ৩: চিফ এডিটর ও নিউরাল ভয়েস ডিরেক্টর';
+                $stage = 'voiceover';
+            } elseif (str_contains($msg, '৩য় স্তর') || str_contains($msg, 'কেন-বার্নস') || str_contains($msg, 'এনকোডিং') || str_contains($msg, 'রেন্ডার')) {
+                $percent = 90;
+                $agentName = 'এজেন্ট ৪: ব্রডকাস্ট প্রোডাকশন ও ৯:১৬ এইচডি রিলস এনকোডার';
+                $stage = 'rendering';
+            } else {
+                $percent = 55;
+                $agentName = 'মাল্টি-এজেন্ট প্রসেসিং';
+                $stage = 'processing';
+            }
+        } elseif ($item->status === 'completed') {
+            $percent = 100;
+            $agentName = 'প্রোডাকশন সম্পন্ন';
+            $stage = 'completed';
+        } elseif ($item->status === 'failed') {
+            $percent = 100;
+            $agentName = 'ব্যর্থ';
+            $stage = 'failed';
         }
 
-        return redirect()->route('admin.video-workshop.index')->with('success', 'ভিডিও টাস্ক সফলভাবে যুক্ত করা হয়েছে।');
+        return response()->json([
+            'success'          => true,
+            'id'               => $item->id,
+            'title'            => $item->title,
+            'status'           => $item->status,
+            'status_message'   => $item->status_message,
+            'progress_percent' => $percent,
+            'current_agent'    => $agentName,
+            'stage'            => $stage,
+            'error_message'    => $item->error_message,
+            'video_url'        => $item->processed_video_url ?: $item->original_video_url,
+            'thumbnail_url'    => $item->thumbnail_url,
+            'article_id'       => $item->article_id,
+        ]);
     }
 
     /**
@@ -194,7 +249,7 @@ class VideoWorkshopController extends Controller
         $item = VideoWorkshopItem::findOrFail($id);
         $res = $this->workshopService->runFullWorkflow($item);
 
-        if (request()->ajax()) {
+        if (request()->ajax() || request()->wantsJson()) {
             return response()->json($res);
         }
 

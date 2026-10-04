@@ -30,7 +30,9 @@ class VideoWorkshopItem extends Model
         'video_format',
         'narration_script',
         'voiceover_path',
+        'voice_tone',
         'extracted_frames',
+        'verification_data',
         'original_video_path',
         'processed_video_path',
         'status',
@@ -53,6 +55,7 @@ class VideoWorkshopItem extends Model
         'auto_post_facebook' => 'boolean',
         'facebook_posted_at' => 'datetime',
         'extracted_frames' => 'array',
+        'verification_data' => 'array',
     ];
 
     public function user()

@@ -1,5 +1,10 @@
 @php
-    $siteLogo = \App\Models\Setting::where('key', 'site_logo')->value('value') ?? '/admin-assets/images/logo-sm.png';
+    $siteLogoRaw = \App\Models\Setting::where('key', 'site_logo')->value('value');
+    if (!empty($siteLogoRaw)) {
+        $siteLogo = str_starts_with($siteLogoRaw, 'http') ? $siteLogoRaw : asset(ltrim($siteLogoRaw, '/'));
+    } else {
+        $siteLogo = asset('admin-assets/images/logo-sm.png');
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -242,7 +247,7 @@
 
     <div class="login-card">
         <div class="logo-container">
-            <img src="{{ $siteLogo }}" alt="BDB News Logo" onerror="this.src='/admin-assets/images/logo-sm.png'">
+            <img src="{{ $siteLogo }}" alt="BDB News Logo" onerror="this.onerror=null; if(this.src!=='{{ asset('admin-assets/images/logo-sm.png') }}'){this.src='{{ asset('admin-assets/images/logo-sm.png') }}';}else{this.style.display='none';}">
             <h2>Welcome Back</h2>
             <p>Sign in to the Admin Control Panel</p>
         </div>
@@ -268,10 +273,10 @@
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
-            <!-- Email Address -->
+            <!-- Email Address / Username -->
             <div class="form-group">
-                <label for="email">Email Address</label>
-                <input id="email" class="form-control" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="admin@example.com">
+                <label for="email">ইমেইল বা ইউজারনেম (Email or Username)</label>
+                <input id="email" class="form-control" type="text" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="admin@example.com অথবা admin">
             </div>
 
             <!-- Password -->

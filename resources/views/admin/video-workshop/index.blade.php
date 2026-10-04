@@ -392,9 +392,43 @@
                             </div>
                         </div>
 
-                        <!-- Step 3: Branding & Facebook Auto-Post Options -->
-                        <div class="row mt-3">
-                            <div class="col-md-4">
+                        <!-- 3-Layer AI Video & Vision Verification Banner -->
+                        <div class="card p-3 my-3" style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1px solid #86efac; border-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge badge-success px-2 py-1 mr-2"><i class="mdi mdi-shield-check mr-1"></i>৩-স্তর এআই যাচাইকরণ সক্রিয়</span>
+                                <strong class="text-dark">ভিডিও দৃশ্য ও সংবাদের শতভাগ সত্যতা নিশ্চিতকরণ পাইপলাইন</strong>
+                            </div>
+                            <div class="row small text-muted">
+                                <div class="col-md-4 mb-1">
+                                    <strong class="text-success d-block"><i class="mdi mdi-eye-check mr-1"></i>১ম স্তর: এআই ভিশন বিশ্লেষণ</strong>
+                                    ভিডিও থেকে কি-ফ্রেম সংগ্রহ করে জেমিনি ভিশন দ্বারা আসল ঘটনা ও সত্য ক্যাটাগরি শনাক্ত করা হয়।
+                                </div>
+                                <div class="col-md-4 mb-1">
+                                    <strong class="text-primary d-block"><i class="mdi mdi-text-box-check mr-1"></i>২য় স্তর: দৃশ্য-সংগতিপূর্ণ স্ক্রিপ্ট</strong>
+                                    ভিডিওতে যা ঘটছে ঠিক তার উপর ভিত্তি করে ১০০% সঙ্গতিপূর্ণ স্ক্রিপ্ট ও নিউরাল ভয়েস তৈরি হয়।
+                                </div>
+                                <div class="col-md-4 mb-1">
+                                    <strong class="text-danger d-block"><i class="mdi mdi-cellphone-play mr-1"></i>৩য় স্তর: কেন-বার্নস রিলস ও পোস্ট</strong>
+                                    ৯:১৬ মোবাইলে আকর্ষণীয় মোশন রিলস তৈরি ও পোর্টালে সরাসরি সঠিক থাম্বনেইল সহ প্রকাশ।
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Voiceover Model, Branding & Facebook Options -->
+                        <div class="row mt-2">
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label class="font-weight-bold small text-dark">
+                                        <i class="mdi mdi-account-voice text-danger mr-1"></i> বাংলা ভয়েস মডেল
+                                    </label>
+                                    <select name="voice_tone" id="voiceToneSelect" class="form-control font-weight-bold">
+                                        <option value="bn-BD-PradeepNeural" selected>🎙️ প্রদীপ (পুরুষ কণ্ঠ - গম্ভীর উপস্থাপক)</option>
+                                        <option value="bn-BD-NabanitaNeural">🎙️ নবনীতা (নারী কণ্ঠ - প্রাঞ্জল উপস্থাপক)</option>
+                                    </select>
+                                    <small class="text-muted">মাইক্রোসফট এজ নিউরাল ভয়েস (স্বাভাবিক মানব কণ্ঠ)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
                                 <div class="form-group mb-2">
                                     <label class="font-weight-bold small text-dark">লোগো ওয়াটারমার্কের অবস্থান</label>
                                     <select name="watermark_position" id="watermarkPosSelect" class="form-control">
@@ -405,21 +439,21 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group mb-2">
                                     <label class="font-weight-bold small text-dark">নিচের ব্যানার স্ট্র্যাপ লেখা</label>
                                     <input type="text" name="branding_text" class="form-control" value="BDB NEWS • সত্যের সন্ধানে সার্বক্ষণিক">
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card p-3 mb-2" style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px;">
+                            <div class="col-md-3">
+                                <div class="card p-2 mb-2" style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px;">
                                     <div class="custom-control custom-checkbox">
                                         <input type="checkbox" name="auto_post_facebook" class="custom-control-input" id="autoPostFbCheck" value="1" {{ $defaultAutoFb ? 'checked' : '' }}>
-                                        <label class="custom-control-label font-weight-bold text-primary" for="autoPostFbCheck">
-                                             <i class="mdi mdi-facebook mr-1"></i> প্রসেসিং শেষে ফেসবুকে অটো-পোস্ট করুন
+                                        <label class="custom-control-label font-weight-bold text-primary small" for="autoPostFbCheck">
+                                             <i class="mdi mdi-facebook mr-1"></i> ফেসবুকে অটো-পোস্ট
                                         </label>
                                     </div>
-                                    <small class="text-muted">টিক দেওয়া থাকলে ভিডিও তৈরি হওয়ামাত্র ফেসবুক পেজে স্বয়ংক্রিয়ভাবে ভিডিও আপলোড হয়ে যাবে।</small>
+                                    <small class="text-muted" style="font-size: 11px;">ভিডিও তৈরি হওয়ামাত্র ফেসবুক পেজে রিলস হিসেবে আপলোড।</small>
                                 </div>
                             </div>
                         </div>
@@ -547,9 +581,12 @@
                                             @if($vid->ai_mode === 'reels')
                                                 <div>
                                                     <span class="badge badge-success px-2 py-1"><i class="mdi mdi-robot mr-1"></i>৯:১৬ এআই রিলস</span>
+                                                    @if(!empty($vid->verification_data))
+                                                        <span class="badge badge-primary px-2 py-1 ml-1" title="৩-স্তর এআই ভিশন ও অডিও যাচাই সম্পন্ন"><i class="mdi mdi-shield-check"></i> ৩-স্তর যাচাই</span>
+                                                    @endif
                                                 </div>
                                                 <small class="text-muted d-block mt-1">
-                                                    <i class="mdi mdi-image-multiple text-primary"></i> ৫টি দৃশ্য + বাংলা ভয়েস
+                                                    <i class="mdi mdi-account-voice text-primary"></i> {{ $vid->voice_tone == 'bn-BD-NabanitaNeural' ? 'ভয়েস: নবনীতা (নারী)' : 'ভয়েস: প্রদীপ (পুরুষ)' }}
                                                 </small>
                                             @else
                                                 <div class="small">
@@ -611,12 +648,9 @@
                                             @endif
 
                                             @if($vid->status !== 'completed')
-                                                <form action="{{ route('admin.video-workshop.process', $vid->id) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm btn-warning" title="পুনরায় প্রসেস করুন">
-                                                        <i class="mdi mdi-autorenew"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-sm btn-warning" onclick="reprocessItem({{ $vid->id }}, '{{ addslashes($vid->title) }}')" title="লাইভ প্রসেসিং শুরু করুন">
+                                                    <i class="mdi mdi-autorenew"></i>
+                                                </button>
                                             @endif
 
                                             @if(!$vid->article_id && $vid->status === 'completed')
@@ -687,6 +721,135 @@
                 <button type="button" class="btn btn-secondary btn-sm px-3 font-weight-bold" onclick="closePlayerModal()">
                     <i class="mdi mdi-close mr-1"></i> বন্ধ করুন (Close)
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Live Video Generation & Multi-Agent Progress -->
+<div class="modal fade" id="modalLiveProgress" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 600px;">
+        <div class="modal-content" style="background: #0f172a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); color: #fff;">
+            
+            <!-- Modal Header -->
+            <div class="modal-header py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1e293b; border-bottom: 1px solid rgba(255,255,255,0.1); border-radius: 16px 16px 0 0;">
+                <div class="d-flex align-items-center">
+                    <span class="mr-2" style="font-size: 24px;">🎬</span>
+                    <div>
+                        <h6 class="modal-title font-weight-bold mb-0 text-white" id="liveModalHeaderTitle">এআই ভিডিও জেনারেশন ও মাল্টি-এজেন্ট প্রসেসিং</h6>
+                        <small class="text-white-50" id="liveModalSubtitle">বিডিবি নিউজ মাল্টি-লেয়ার স্টুডিও ইঞ্জিন</small>
+                    </div>
+                </div>
+                <div id="liveSpinnerHeader">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4">
+                
+                <!-- Video Title Preview -->
+                <div class="mb-3 text-truncate">
+                    <span class="badge badge-primary px-2 py-1 mr-1">টাস্ক</span>
+                    <strong class="text-light" id="liveVideoTitleDisplay" style="font-size: 14px;">ইউটিউব ভিডিও বিশ্লেষণ চলছে...</strong>
+                </div>
+
+                <!-- Progress Header Info -->
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-white-50 font-weight-bold small" id="liveStageLabel">১ম স্তর: ভিডিও ডাউনলোড ও কি-ফ্রেম সংগ্রহ...</span>
+                    <span class="font-weight-bold text-primary" id="liveProgressPercentText" style="font-size: 18px;">10%</span>
+                </div>
+
+                <!-- Animated Progress Bar -->
+                <div class="progress mb-4" style="height: 18px; border-radius: 9px; background: #1e293b; overflow: hidden; border: 1px solid rgba(255,255,255,0.08);">
+                    <div id="liveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 10%; background: linear-gradient(135deg, #8A2387, #E94057, #F27121); transition: width 0.5s ease;"></div>
+                </div>
+
+                <!-- Multi-Agent Step Pipeline Status -->
+                <div class="card p-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+                    <div class="small font-weight-bold text-uppercase mb-2 text-white-50" style="letter-spacing: 0.5px;">
+                        <i class="mdi mdi-layers-triple mr-1 text-info"></i> ৪-স্তর মাল্টি-এজেন্ট লাইভ অগ্রগতি:
+                    </div>
+                    
+                    <div class="agent-step-item d-flex align-items-center mb-2" id="stepItemDownload">
+                        <div class="step-icon mr-2" id="stepIconDownload"><i class="mdi mdi-loading mdi-spin text-warning"></i></div>
+                        <div class="step-desc small flex-grow-1">১. ইউটিউব ভিডিও ডাউনলোড ও ৫টি কি-ফ্রেম সংগ্রহ</div>
+                        <span class="badge badge-warning px-2 py-0" id="stepBadgeDownload">চলমান</span>
+                    </div>
+
+                    <div class="agent-step-item d-flex align-items-center mb-2" id="stepItemVision">
+                        <div class="step-icon mr-2" id="stepIconVision"><i class="mdi mdi-circle-outline text-muted"></i></div>
+                        <div class="step-desc small flex-grow-1">২. এজেন্ট ১: জেমিনি এআই ভিশন বিশ্লেষণ ও সত্যতা যাচাই</div>
+                        <span class="badge badge-secondary px-2 py-0" id="stepBadgeVision">অপেক্ষমাণ</span>
+                    </div>
+
+                    <div class="agent-step-item d-flex align-items-center mb-2" id="stepItemEditor">
+                        <div class="step-icon mr-2" id="stepIconEditor"><i class="mdi mdi-circle-outline text-muted"></i></div>
+                        <div class="step-desc small flex-grow-1">৩. এজেন্ট ২ ও ৩: চিফ এডিটর স্ক্রিপ্ট ও নিউরাল ভয়েসওভার</div>
+                        <span class="badge badge-secondary px-2 py-0" id="stepBadgeEditor">অপেক্ষমাণ</span>
+                    </div>
+
+                    <div class="agent-step-item d-flex align-items-center" id="stepItemRender">
+                        <div class="step-icon mr-2" id="stepIconRender"><i class="mdi mdi-circle-outline text-muted"></i></div>
+                        <div class="step-desc small flex-grow-1">৪. এজেন্ট ৪: কেন-বার্নস মোশন ও ৯:১৬ এইচডি ভিডিও এনকোডিং</div>
+                        <span class="badge badge-secondary px-2 py-0" id="stepBadgeRender">অপেক্ষমাণ</span>
+                    </div>
+                </div>
+
+                <!-- Log Stream Box -->
+                <div class="mb-3">
+                    <div class="small text-white-50 mb-1 d-flex justify-content-between">
+                        <span><i class="mdi mdi-console-line mr-1"></i> লাইভ ইভেন্ট লগ:</span>
+                        <span class="text-muted" id="liveElapsedTimer">সময়: 0s</span>
+                    </div>
+                    <div id="liveLogConsole" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; max-height: 110px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #67e8f9; line-height: 1.5;">
+                        <div>[ইনিশিয়ালাইজেশন] টাস্ক সফলভাবে কিউতে যুক্ত হয়েছে...</div>
+                    </div>
+                </div>
+
+                <!-- Video Preview Box (Shown on Completion) -->
+                <div id="liveCompletedBox" style="display: none;">
+                    <div class="alert alert-success d-flex align-items-center mb-3" style="background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #86efac; border-radius: 10px;">
+                        <i class="mdi mdi-check-circle mr-2" style="font-size: 24px;"></i>
+                        <div>
+                            <strong>অভিনন্দন!</strong> আপনার কপিরাইট-মুক্ত ৯:১৬ এআই রিলস সফলভাবে প্রস্তুত হয়েছে।
+                        </div>
+                    </div>
+                    <div class="text-center mb-3">
+                        <video id="liveSuccessVideo" controls playsinline style="max-height: 280px; max-width: 100%; border-radius: 12px; border: 2px solid #334155; background: #000; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                            <source src="" type="video/mp4" id="liveSuccessVideoSource">
+                        </video>
+                    </div>
+                </div>
+
+                <!-- Error Box (Shown on Failure) -->
+                <div id="liveErrorBox" style="display: none;">
+                    <div class="alert alert-danger mb-3" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; border-radius: 10px;">
+                        <h6 class="font-weight-bold mb-1"><i class="mdi mdi-alert-circle mr-1"></i> প্রসেসিং ব্যর্থ হয়েছে</h6>
+                        <p class="small mb-0" id="liveErrorMessageText">অজানা ত্রুটি ঘটেছে।</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1e293b; border-top: 1px solid rgba(255,255,255,0.1); border-radius: 0 0 16px 16px;">
+                <div id="liveFooterStatus">
+                    <small class="text-white-50"><i class="mdi mdi-shield-sync mr-1"></i> অনুগ্রহ করে অপেক্ষা করুন...</small>
+                </div>
+                <div id="liveFooterActions" class="d-flex align-items-center">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" id="liveModalCloseBtn" onclick="closeProgressModal()" style="display: none;">
+                        <i class="mdi mdi-close mr-1"></i> বন্ধ করুন
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm px-3 ml-2 font-weight-bold" id="liveCreateArticleBtn" onclick="createArticleFromModal()" style="display: none;">
+                        <i class="mdi mdi-newspaper mr-1"></i> সাইটে নিউজ আর্টিকেল পোস্ট করুন
+                    </button>
+                    <a href="{{ route('admin.video-workshop.index') }}" id="liveRefreshBtn" class="btn btn-primary btn-sm px-3 ml-2 font-weight-bold" style="display: none;">
+                        <i class="mdi mdi-refresh mr-1"></i> রিফ্রেশ করুন
+                    </a>
+                    <button type="button" class="btn btn-warning btn-sm px-3 ml-2 font-weight-bold" id="liveRetryBtn" onclick="retryCurrentItem()" style="display: none;">
+                        <i class="mdi mdi-autorenew mr-1"></i> পুনরায় চেষ্টা করুন
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -979,5 +1142,282 @@
 
     // Initialize visuals on page load
     recalculateTrimVisuals();
+
+    // =========================================================================
+    // LIVE POPUP PROGRESS MODAL ENGINE & AJAX WORKFLOW
+    // =========================================================================
+    let currentProgressItemId = null;
+    let progressPollInterval = null;
+    let elapsedTimerInterval = null;
+    let elapsedSeconds = 0;
+    let lastLoggedMessage = '';
+
+    // Intercept Workshop Form submission to trigger live progress popup
+    document.getElementById('workshopForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const origHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="mdi mdi-loading mdi-spin mr-1"></i> টাস্ক ইনিশিয়ালাইজ হচ্ছে...';
+
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origHtml;
+
+            if (data.success && data.item_id) {
+                const title = document.getElementById('videoTitleInput').value || 'ইউটিউব ভিডিও';
+                startLiveProgress(data.item_id, title);
+            } else {
+                alert('ত্রুটি: ' + (data.message || 'টাস্ক জমা করা যায়নি'));
+            }
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origHtml;
+            alert('সার্ভার রিকোয়েস্ট ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+        });
+    });
+
+    function reprocessItem(itemId, videoTitle) {
+        startLiveProgress(itemId, videoTitle);
+    }
+
+    function startLiveProgress(itemId, videoTitle) {
+        currentProgressItemId = itemId;
+        elapsedSeconds = 0;
+        lastLoggedMessage = '';
+        
+        // Reset modal UI
+        document.getElementById('liveVideoTitleDisplay').innerText = videoTitle || 'ভিডিও প্রসেসিং...';
+        document.getElementById('liveProgressBar').style.width = '10%';
+        document.getElementById('liveProgressBar').className = 'progress-bar progress-bar-striped progress-bar-animated';
+        document.getElementById('liveProgressBar').style.background = 'linear-gradient(135deg, #8A2387, #E94057, #F27121)';
+        document.getElementById('liveProgressPercentText').innerText = '10%';
+        document.getElementById('liveStageLabel').innerText = 'ইউটিউব থেকে ভিডিও ডাউনলোড হচ্ছে...';
+        
+        document.getElementById('liveSpinnerHeader').style.display = 'block';
+        document.getElementById('liveCompletedBox').style.display = 'none';
+        document.getElementById('liveErrorBox').style.display = 'none';
+        
+        document.getElementById('liveModalCloseBtn').style.display = 'none';
+        document.getElementById('liveCreateArticleBtn').style.display = 'none';
+        document.getElementById('liveRefreshBtn').style.display = 'none';
+        document.getElementById('liveRetryBtn').style.display = 'none';
+        
+        resetStepIcons();
+        
+        document.getElementById('liveLogConsole').innerHTML = '<div>[' + new Date().toLocaleTimeString() + '] টাস্ক শুরু হয়েছে...</div>';
+
+        // Show modal
+        $('#modalLiveProgress').modal({
+            backdrop: 'static',
+            keyboard: false,
+            show: true
+        });
+
+        // Start timer
+        if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+        elapsedTimerInterval = setInterval(() => {
+            elapsedSeconds++;
+            document.getElementById('liveElapsedTimer').innerText = 'সময়: ' + elapsedSeconds + 's';
+        }, 1000);
+
+        // Start status polling
+        pollItemStatus();
+        if (progressPollInterval) clearInterval(progressPollInterval);
+        progressPollInterval = setInterval(pollItemStatus, 1200);
+
+        // Trigger asynchronous processing request on server
+        fetch('{{ url("admin/video-workshop/process") }}/' + itemId, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        }).then(res => res.json()).then(data => {
+            pollItemStatus();
+        }).catch(err => {
+            console.log('Background process trigger completed or closed:', err);
+        });
+    }
+
+    function pollItemStatus() {
+        if (!currentProgressItemId) return;
+
+        fetch('{{ url("admin/video-workshop/status") }}/' + currentProgressItemId, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const percent = data.progress_percent || 10;
+            const msg = data.status_message || 'প্রসেসিং চলছে...';
+
+            document.getElementById('liveProgressBar').style.width = percent + '%';
+            document.getElementById('liveProgressPercentText').innerText = percent + '%';
+            document.getElementById('liveStageLabel').innerText = msg;
+
+            // Log message if changed
+            if (msg && msg !== lastLoggedMessage) {
+                lastLoggedMessage = msg;
+                const logBox = document.getElementById('liveLogConsole');
+                logBox.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+
+            // Update step checklist
+            updateStepChecklist(data.stage, percent);
+
+            // Check if finished or failed
+            if (data.status === 'completed') {
+                clearInterval(progressPollInterval);
+                clearInterval(elapsedTimerInterval);
+                onProcessComplete(data);
+            } else if (data.status === 'failed') {
+                clearInterval(progressPollInterval);
+                clearInterval(elapsedTimerInterval);
+                onProcessFailed(data);
+            }
+        })
+        .catch(err => console.log('Poll error:', err));
+    }
+
+    function resetStepIcons() {
+        setStepState('stepIconDownload', 'stepBadgeDownload', 'running', 'চলমান');
+        setStepState('stepIconVision', 'stepBadgeVision', 'waiting', 'অপেক্ষমাণ');
+        setStepState('stepIconEditor', 'stepBadgeEditor', 'waiting', 'অপেক্ষমাণ');
+        setStepState('stepIconRender', 'stepBadgeRender', 'waiting', 'অপেক্ষমাণ');
+    }
+
+    function setStepState(iconId, badgeId, state, text) {
+        const iconEl = document.getElementById(iconId);
+        const badgeEl = document.getElementById(badgeId);
+        if (!iconEl || !badgeEl) return;
+
+        if (state === 'running') {
+            iconEl.innerHTML = '<i class="mdi mdi-loading mdi-spin text-warning"></i>';
+            badgeEl.className = 'badge badge-warning px-2 py-0';
+            badgeEl.innerText = text || 'চলমান';
+        } else if (state === 'done') {
+            iconEl.innerHTML = '<i class="mdi mdi-check-circle text-success"></i>';
+            badgeEl.className = 'badge badge-success px-2 py-0';
+            badgeEl.innerText = text || 'সম্পন্ন';
+        } else {
+            iconEl.innerHTML = '<i class="mdi mdi-circle-outline text-muted"></i>';
+            badgeEl.className = 'badge badge-secondary px-2 py-0';
+            badgeEl.innerText = text || 'অপেক্ষমাণ';
+        }
+    }
+
+    function updateStepChecklist(stage, percent) {
+        if (percent >= 25) {
+            setStepState('stepIconDownload', 'stepBadgeDownload', 'done', 'সম্পন্ন');
+            setStepState('stepIconVision', 'stepBadgeVision', 'running', 'চলমান');
+        }
+        if (percent >= 45) {
+            setStepState('stepIconVision', 'stepBadgeVision', 'done', 'সম্পন্ন');
+            setStepState('stepIconEditor', 'stepBadgeEditor', 'running', 'চলমান');
+        }
+        if (percent >= 70) {
+            setStepState('stepIconEditor', 'stepBadgeEditor', 'done', 'সম্পন্ন');
+            setStepState('stepIconRender', 'stepBadgeRender', 'running', 'চলমান');
+        }
+        if (percent >= 100) {
+            setStepState('stepIconDownload', 'stepBadgeDownload', 'done', 'সম্পন্ন');
+            setStepState('stepIconVision', 'stepBadgeVision', 'done', 'সম্পন্ন');
+            setStepState('stepIconEditor', 'stepBadgeEditor', 'done', 'সম্পন্ন');
+            setStepState('stepIconRender', 'stepBadgeRender', 'done', 'সম্পন্ন');
+        }
+    }
+
+    function onProcessComplete(data) {
+        document.getElementById('liveSpinnerHeader').style.display = 'none';
+        document.getElementById('liveProgressBar').style.width = '100%';
+        document.getElementById('liveProgressBar').className = 'progress-bar bg-success';
+        document.getElementById('liveProgressPercentText').innerText = '100%';
+        document.getElementById('liveStageLabel').innerText = '৩-স্তরে যাচাইকৃত কপিরাইট-মুক্ত এআই রিলস প্রস্তুত হয়েছে!';
+
+        // Show Completed Box with video preview
+        document.getElementById('liveCompletedBox').style.display = 'block';
+        if (data.video_url) {
+            const vid = document.getElementById('liveSuccessVideo');
+            const src = document.getElementById('liveSuccessVideoSource');
+            src.src = data.video_url;
+            vid.load();
+        }
+
+        document.getElementById('liveFooterStatus').innerHTML = '<span class="text-success font-weight-bold"><i class="mdi mdi-check-all mr-1"></i>প্রসেসিং সফল!</span>';
+        document.getElementById('liveModalCloseBtn').style.display = 'inline-block';
+        document.getElementById('liveRefreshBtn').style.display = 'inline-block';
+
+        if (!data.article_id) {
+            document.getElementById('liveCreateArticleBtn').style.display = 'inline-block';
+        }
+    }
+
+    function onProcessFailed(data) {
+        document.getElementById('liveSpinnerHeader').style.display = 'none';
+        document.getElementById('liveProgressBar').className = 'progress-bar bg-danger';
+        document.getElementById('liveProgressPercentText').innerText = 'ব্যর্থ';
+        document.getElementById('liveStageLabel').innerText = 'প্রসেসিং ব্যর্থ হয়েছে';
+
+        document.getElementById('liveErrorBox').style.display = 'block';
+        document.getElementById('liveErrorMessageText').innerText = data.error_message || 'অজানা ত্রুটি ঘটেছে।';
+
+        document.getElementById('liveFooterStatus').innerHTML = '<span class="text-danger font-weight-bold"><i class="mdi mdi-alert mr-1"></i>ত্রুটি পরিলক্ষিত হয়েছে</span>';
+        document.getElementById('liveModalCloseBtn').style.display = 'inline-block';
+        document.getElementById('liveRetryBtn').style.display = 'inline-block';
+    }
+
+    function closeProgressModal() {
+        if (progressPollInterval) clearInterval(progressPollInterval);
+        if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+        
+        const vid = document.getElementById('liveSuccessVideo');
+        if (vid) vid.pause();
+
+        $('#modalLiveProgress').modal('hide');
+        setTimeout(() => {
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right', '');
+        }, 150);
+    }
+
+    function retryCurrentItem() {
+        if (!currentProgressItemId) return;
+        const title = document.getElementById('liveVideoTitleDisplay').innerText;
+        startLiveProgress(currentProgressItemId, title);
+    }
+
+    function createArticleFromModal() {
+        if (!currentProgressItemId) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url("admin/video-workshop/create-article") }}/' + currentProgressItemId;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = '{{ csrf_token() }}';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    }
 </script>
 @endpush

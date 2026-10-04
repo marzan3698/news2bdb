@@ -134,12 +134,15 @@ class Article extends Model
     }
 
     /**
-     * Get a guaranteed valid image URL that works on both local subdirectory and production.
+     * Get a guaranteed valid image URL that works on both local server and production.
      */
     public function getSafeImageUrlAttribute(): string
     {
         $url = $this->image_url;
         if (!empty($url)) {
+            if (preg_match('/(?:localhost(?:\/bdbnews\/public)?|127\.0\.0\.1:8000)\/(storage\/[^\s"\']+)/', $url, $m)) {
+                return asset($m[1]);
+            }
             if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
                 return $url;
             }
